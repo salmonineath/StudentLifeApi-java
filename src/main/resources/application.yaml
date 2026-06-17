@@ -1,3 +1,8 @@
 spring:
   application:
     name: studentlifejava
+    jwt-secret: sndfnsdlfsd1cs3zdx1cs52d4z1cs4df1csz4dfv1c4fdv65fd1v6d5f1v65d1f6v5fd41vdfvsdvkkih85
+    # 30d
+    refresh-token-expire: 2592000000
+    # 15min
+    access-token-expire: 900000
