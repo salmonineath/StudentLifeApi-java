@@ -3,6 +3,8 @@ package com.studentlife.studentlifejava.Service.Impl;
 import com.studentlife.studentlifejava.DTO.Request.AuthRequest;
 import com.studentlife.studentlifejava.DTO.Request.RegisterRequest;
 import com.studentlife.studentlifejava.DTO.Response.ApiResponse;
+import com.studentlife.studentlifejava.DTO.Response.AuthResponse;
+import com.studentlife.studentlifejava.DTO.Response.UserResponse;
 import com.studentlife.studentlifejava.Entity.Role;
 import com.studentlife.studentlifejava.Entity.User;
 import com.studentlife.studentlifejava.JWT.JWTService;
@@ -10,6 +12,8 @@ import com.studentlife.studentlifejava.Mapper.UserMapper;
 import com.studentlife.studentlifejava.Repository.RoleRepository;
 import com.studentlife.studentlifejava.Repository.UserRepository;
 import com.studentlife.studentlifejava.Service.AuthService;
+import com.studentlife.studentlifejava.Utils.CookieUtil;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
+    private final CookieUtil cookieUtil;
 
     @Override
     public ApiResponse<?> register(RegisterRequest request, HttpServletResponse response) {
@@ -52,7 +57,27 @@ public class AuthServiceImpl implements AuthService {
                 .map(Role::getName)
                 .toList();
 
-        return null;
+        String accessToken = jwtService.generateAccessToken(
+                String.valueOf(savedUser.getId()),
+                savedUser.getEmail(),
+                savedUser.getUsername(),
+                role
+        );
+
+        Cookie cookie = new Cookie("access_token", accessToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60 * 24);
+        response.addCookie(cookie);
+
+        UserResponse userResponse = userMapper.toUserResponse(savedUser);
+
+        return new ApiResponse<>(
+                201,
+                true,
+                "Registered successfully.",
+                new AuthResponse(accessToken, userResponse)
+        );
     }
 
     @Override
