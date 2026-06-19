@@ -36,7 +36,7 @@ public class CookieUtil {
         response.addHeader("Set-Cookie", buildCookie("accessToken", value, maxAge).toString());
     }
 
-    private void setRefreshTokenCookie(HttpServletResponse response, String value) {
+    public void setRefreshTokenCookie(HttpServletResponse response, String value) {
         long maxAge = refreshTokenExpireMs / 1000;
         response.addHeader("Set-Cookie", buildCookie("refreshToken", value, maxAge).toString());
     }

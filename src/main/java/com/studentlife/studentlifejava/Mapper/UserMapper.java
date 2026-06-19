@@ -12,18 +12,16 @@ import org.mapstruct.Mapping;
 )
 public interface UserMapper {
 
-    @Mapping(target = "role", source = "role")
+    @Mapping(target = "roles", source = "roles")
     UserResponse toUserResponse(User user);
 
-    @Mapping(target = "id",                 ignore = true)
-    @Mapping(target = "phone",              ignore = true)
-    @Mapping(target = "university",         ignore = true)
-    @Mapping(target = "major",              ignore = true)
-    @Mapping(target = "academicYear",       ignore = true)
-    @Mapping(target = "oneSignalPlayerId",  ignore = true)
-    @Mapping(target = "roles",              ignore = true)
-    @Mapping(target = "isActive",           ignore = true)
-    @Mapping(target = "createdAt",          ignore = true)
-    @Mapping(target = "updatedAt",          ignore = true)
+    @Mapping(target = "id",           ignore = true)
+    @Mapping(target = "university",   ignore = true)
+    @Mapping(target = "major",        ignore = true)
+    @Mapping(target = "academicYear", ignore = true)
+    @Mapping(target = "roles",        ignore = true)
+    @Mapping(target = "isActive",     ignore = true)
+    @Mapping(target = "createdAt",    ignore = true)
+    @Mapping(target = "updatedAt",    ignore = true)
     User toUserEntityRegisterUser(RegisterRequest request);
 }

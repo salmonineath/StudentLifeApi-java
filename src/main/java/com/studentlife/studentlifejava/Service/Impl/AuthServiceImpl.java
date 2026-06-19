@@ -13,7 +13,6 @@ import com.studentlife.studentlifejava.Repository.RoleRepository;
 import com.studentlife.studentlifejava.Repository.UserRepository;
 import com.studentlife.studentlifejava.Service.AuthService;
 import com.studentlife.studentlifejava.Utils.CookieUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -64,11 +63,12 @@ public class AuthServiceImpl implements AuthService {
                 role
         );
 
-        Cookie cookie = new Cookie("access_token", accessToken);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24);
-        response.addCookie(cookie);
+//        Cookie cookie = new Cookie("access_token", accessToken);
+//        cookie.setHttpOnly(true);
+//        cookie.setPath("/");
+//        cookie.setMaxAge(60 * 60 * 24);
+//        response.addCookie(cookie);
+        cookieUtil.setAccessTokenCookie(response, accessToken);
 
         UserResponse userResponse = userMapper.toUserResponse(savedUser);
 
@@ -82,6 +82,35 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ApiResponse<?> login(AuthRequest request, HttpServletResponse response) {
-        return null;
+        User user = userRepository.findByEmail(request.getEmail_or_username())
+                .orElseThrow(() -> notFound("User not found."));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw validation("Invalid credentials.");
+        }
+
+        List<String> role = user.getRoles()
+                .stream()
+                .map(Role::getName)
+                .toList();
+
+        String accessToken = jwtService.generateAccessToken(
+                String.valueOf(user.getId()),
+                user.getEmail(),
+                user.getUsername(),
+                role
+        );
+        String refreshToken = jwtService.generateRefreshToken(String.valueOf(user.getId()));
+
+        cookieUtil.setAccessTokenCookie(response, accessToken);
+        cookieUtil.setRefreshTokenCookie(response, refreshToken);
+
+        UserResponse userResponse = userMapper.toUserResponse(user);
+        return new ApiResponse<>(
+                200,
+                true,
+                "Login successfully.",
+                new AuthResponse(accessToken, userResponse)
+        );
     }
 }
