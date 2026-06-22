@@ -7,7 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.Instant;
 
 @Entity
-@Table(name = "role")
+@Table(name = "roles")
 @Data
 public class Role {
 

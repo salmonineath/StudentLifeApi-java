@@ -7,8 +7,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(
+        componentModel = "spring",
         config = MapperConfiguration.class,
-        uses = {RoleMapper.class }
+        uses = {RoleMapper.class}
 )
 public interface UserMapper {
 
