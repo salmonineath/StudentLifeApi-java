@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.toUserEntityRegisterUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        Role defaultRole = roleRepository.findByName("student")
+        Role defaultRole = roleRepository.findByName("user")
                 .orElseThrow(() -> notFound("Default role not found."));
         user.setRoles(new HashSet<>(Set.of(defaultRole)));
 

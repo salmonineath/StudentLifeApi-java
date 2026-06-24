@@ -2,7 +2,7 @@ package com.studentlife.studentlifejava.JWT;
 
 import com.studentlife.studentlifejava.Security.UserDetailService;
 import com.studentlife.studentlifejava.Utils.CookieUtil;
-import jakarta.annotation.Nonnull;
+import org.springframework.lang.NonNull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,9 +27,9 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     private final UserDetailService userDetailService;
 
     @Override
-    protected void doFilterInternal(@Nonnull HttpServletRequest request,
-                                    @Nonnull HttpServletResponse response,
-                                    @Nonnull FilterChain filterChain
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         String token = cookieUtil.getCookieValue(request, "accessToken");
 
