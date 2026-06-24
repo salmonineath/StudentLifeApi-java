@@ -57,8 +57,17 @@ public class JWTService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("email", email);
+        claims.put("username", username);
+        claims.put("role", role);
         claims.put("type", "access");
 
+        return buildToken(claims, userId, accessTokenExpired);
+    }
+
+    public String generateRefreshToken(String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "refresh");
         return buildToken(claims, userId, refreshTokenExpired);
     }
 
@@ -78,4 +87,27 @@ public class JWTService {
                 .signWith(getSignKey(), Jwts.SIG.HS512)
                 .compact();
     }
+
+    /*
+     * =========================
+     * CLAIM EXTRACTORS
+     * =========================
+     */
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
+
 }
