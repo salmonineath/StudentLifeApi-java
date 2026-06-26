@@ -3,6 +3,7 @@ package com.studentlife.studentlifejava.Controller;
 import com.studentlife.studentlifejava.DTO.Request.AuthRequest;
 import com.studentlife.studentlifejava.DTO.Request.RegisterRequest;
 import com.studentlife.studentlifejava.Service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +30,10 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest request,
                                    HttpServletResponse response) {
         return ResponseEntity.ok(authService.login(request, response));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
+        return ResponseEntity.ok(authService.logout(response, request));
     }
 }

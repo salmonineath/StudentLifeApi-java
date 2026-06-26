@@ -2,7 +2,19 @@ services:
   app:
     build: .
     container_name: studentlife-java
-    ports:
-      - "5000:5000"
     env_file:
       - .env
+    expose:
+      - "5000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/ssl/cloudflare:ro
+    depends_on:
+      - app
