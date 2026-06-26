@@ -1,11 +1,9 @@
 package com.studentlife.studentlifejava.JWT;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,15 +19,13 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JWTService {
 
-    private static final Logger logger = LoggerFactory.getLogger(JWTService.class);
-
-    @Value("${spring.jwt-secret}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${spring.access-token-expire}")
+    @Value("${jwt.access-token-expire}")
     private long accessTokenExpired;
 
-    @Value("${spring.refresh-token-expire}")
+    @Value("${jwt.refresh-token-expire}")
     private long refreshTokenExpired;
 
     private SecretKey getSignKey() {
@@ -52,12 +48,22 @@ public class JWTService {
             String userId,
             String email,
             String username,
-            List<String> role
+            List<String> roles
     ) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("email", email);
+        claims.put("username", username);
+        claims.put("roles", roles);
         claims.put("type", "access");
+
+        return buildToken(claims, userId, accessTokenExpired);
+    }
+
+    public String generateRefreshToken(String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "refresh");
 
         return buildToken(claims, userId, refreshTokenExpired);
     }
@@ -77,5 +83,21 @@ public class JWTService {
                 .expiration(expiry)
                 .signWith(getSignKey(), Jwts.SIG.HS512)
                 .compact();
+    }
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
     }
 }

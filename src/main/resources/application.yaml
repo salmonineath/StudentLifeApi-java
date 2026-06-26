@@ -3,6 +3,9 @@ spring:
     name: studentlifejava
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:mySuperSecretKeyForJWTAuthentication12345678901234567890abcdef}
   access-token-expire: ${JWT_ACCESS_TOKEN_EXPIRE:900000}
   refresh-token-expire: ${JWT_REFRESH_TOKEN_EXPIRE:2592000000}
+
+server:
+  port: 5000
