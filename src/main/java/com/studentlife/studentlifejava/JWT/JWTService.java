@@ -3,6 +3,7 @@ package com.studentlife.studentlifejava.JWT;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Claims;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +21,15 @@ public class JWTService {
 
     private static final Logger logger = LoggerFactory.getLogger(JWTService.class);
 
-    @Value("${spring.jwt-secret}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${spring.access-token-expire}")
+    @Getter
+    @Value("${jwt.access-token-expire}")
     private long accessTokenExpired;
 
-    @Value("${spring.refresh-token-expire}")
+    @Getter
+    @Value("${jwt.refresh-token-expire}")
     private long refreshTokenExpired;
 
     private SecretKey getSignKey() {
@@ -102,6 +105,5 @@ public class JWTService {
     public String extractTokenType(String token) {
         return extractClaim(token, claims -> claims.get("type", String.class));
     }
-
 
 }

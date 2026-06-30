@@ -1,6 +1,11 @@
 spring:
   application:
     name: studentlifejava
+  datasource:
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
 jwt:
   secret: ${JWT_SECRET}
@@ -10,3 +15,12 @@ jwt:
 server:
   port: 5000
   forward-headers-strategy: framework
+
+jpa:
+   hibernate:
+     ddl-auto: validate        # Hibernate checks schema matches entities, never touches DDL
+     show-sql: false
+
+flyway:
+  enabled: true
+  locations: classpath:db/migration

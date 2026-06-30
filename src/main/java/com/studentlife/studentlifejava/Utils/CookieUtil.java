@@ -12,10 +12,10 @@ import java.time.Duration;
 @Component
 public class CookieUtil {
 
-    @Value("${spring.access-token-expire}")
+    @Value("${jwt.access-token-expire}")
     private long accessTokenExpireMs;
 
-    @Value("${spring.refresh-token-expire}")
+    @Value("${jwt.refresh-token-expire}")
     private long refreshTokenExpireMs;
 
     @Value("${app.secure-cookie:false}")

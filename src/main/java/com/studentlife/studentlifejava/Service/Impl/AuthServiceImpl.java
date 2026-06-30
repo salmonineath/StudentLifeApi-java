@@ -1,9 +1,8 @@
 package com.studentlife.studentlifejava.Service.Impl;
 
+import com.studentlife.studentlifejava.DTO.AuthResult;
 import com.studentlife.studentlifejava.DTO.Request.AuthRequest;
 import com.studentlife.studentlifejava.DTO.Request.RegisterRequest;
-import com.studentlife.studentlifejava.DTO.Response.ApiResponse;
-import com.studentlife.studentlifejava.DTO.Response.AuthResponse;
 import com.studentlife.studentlifejava.DTO.Response.UserResponse;
 import com.studentlife.studentlifejava.Entity.RefreshToken;
 import com.studentlife.studentlifejava.Entity.Role;
@@ -14,15 +13,10 @@ import com.studentlife.studentlifejava.Repository.RefreshTokenRepository;
 import com.studentlife.studentlifejava.Repository.RoleRepository;
 import com.studentlife.studentlifejava.Repository.UserRepository;
 import com.studentlife.studentlifejava.Service.AuthService;
-import com.studentlife.studentlifejava.Utils.CookieUtil;
 import com.studentlife.studentlifejava.Utils.TokenHashUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -38,78 +32,19 @@ import static com.studentlife.studentlifejava.Exception.ErrorsExceptionFactory.*
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
-    private final CookieUtil cookieUtil;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenHashUtil tokenHashUtil;
 
     @Override
     @Transactional
-    public ApiResponse<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-
-//        String refreshTokenValue = cookieUtil.getCookieValue(request, "refreshToken");
-//
-//        if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
-//            throw unauthorized("refreshToken is missing");
-//        }
-//
-//        String inComingHash = TokenHashUtil.hash(refreshTokenValue);
-//
-//        RefreshToken storedToken = refreshTokenRepository
-//                .findByTokenHash(refreshTokenValue)
-//                .orElseThrow(() -> {
-//                    logger.warn("Refresh attempt with unknown token hash");
-//                    return unauthorized("Invalid refresh token");
-//                });
-//
-//        User user = storedToken.getUser();
-//
-//        if (storedToken.isRevoke()) {
-//            logger.warn(
-//                    "SECURITY ALERT: Refresh token reuse detected for user id={}. " + "Revoking all sessions. Possible token theft.",
-//                    user.getId()
-//            );
-//
-//            refreshTokenRepository.revokeALlByUser(user);
-//
-//            cookieUtil.clearAuthCookie(response, "refreshToken");
-//            cookieUtil.clearAuthCookie(response, "accessToken");
-//
-//            throw unauthorized("Session invalidated. Please log in again.");
-//        }
-//
-//        if (storedToken.getExpiredAt().isBefore(Instant.now())) {
-//            refreshTokenRepository.delete(storedToken);
-//            cookieUtil.clearAuthCookie(response, "refreshToken");
-//            throw unauthorized("Refresh token has expired. Please log in again");
-//        }
-//
-//        storedToken.setRevoke(true);
-//        refreshTokenRepository.save(storedToken);
-//
-//        List<String> role = user.getRoles().stream().map(Role::getName).toList();
-//        String newAccessToken = jwtService.generateAccessToken(
-//                String.valueOf(user.getId()),
-//                user.getEmail(),
-//                user.getUsername(),
-//                role
-//        );
-//
-////        jwtService.generateAccessToken(user, response);
-//
-//        cookieUtil.setAccessTokenCookie(response, newAccessToken);
-        return null;
-    }
-
-    @Override
-    public ApiResponse<?> register(RegisterRequest request, HttpServletResponse response) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent() || userRepository.findByUsername(request.getUsername()).isPresent()) {
+    public AuthResult register(RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()
+                || userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw validation("This email or username already been used.");
         }
 
@@ -122,32 +57,25 @@ public class AuthServiceImpl implements AuthService {
 
         User savedUser = userRepository.save(user);
 
-        List<String> role = user.getRoles()
-                .stream()
-                .map(Role::getName)
-                .toList();
+        List<String> roles = savedUser.getRoles().stream().map(Role::getName).toList();
 
         String accessToken = jwtService.generateAccessToken(
                 String.valueOf(savedUser.getId()),
                 savedUser.getEmail(),
                 savedUser.getUsername(),
-                role
+                roles
         );
+        String refreshToken = jwtService.generateRefreshToken(String.valueOf(savedUser.getId()));
 
-        cookieUtil.setAccessTokenCookie(response, accessToken);
+        saveRefreshToken(savedUser, refreshToken);
 
         UserResponse userResponse = userMapper.toUserResponse(savedUser);
-
-        return new ApiResponse<>(
-                201,
-                true,
-                "Registered successfully.",
-                new AuthResponse(accessToken, userResponse)
-        );
+        return AuthResult.of(accessToken, refreshToken, userResponse);
     }
 
     @Override
-    public ApiResponse<?> login(AuthRequest request, HttpServletResponse response) {
+    @Transactional
+    public AuthResult login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail_or_username())
                 .orElseThrow(() -> notFound("User not found."));
 
@@ -155,48 +83,84 @@ public class AuthServiceImpl implements AuthService {
             throw validation("Invalid credentials.");
         }
 
-        List<String> role = user.getRoles()
-                .stream()
-                .map(Role::getName)
-                .toList();
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
 
         String accessToken = jwtService.generateAccessToken(
                 String.valueOf(user.getId()),
                 user.getEmail(),
                 user.getUsername(),
-                role
+                roles
         );
         String refreshToken = jwtService.generateRefreshToken(String.valueOf(user.getId()));
 
-        cookieUtil.setAccessTokenCookie(response, accessToken);
-        cookieUtil.setRefreshTokenCookie(response, refreshToken);
+        saveRefreshToken(user, refreshToken);
 
-        UserResponse userResponse = userMapper.toUserResponse(user);
-        return new ApiResponse<>(
-                200,
-                true,
-                "Login successfully.",
-                new AuthResponse(accessToken, userResponse)
-        );
+        return AuthResult.of(accessToken, refreshToken);
     }
 
     @Override
-    public ApiResponse<Object> logout(HttpServletResponse response, HttpServletRequest request) {
-
-        String refreshTokenValue = cookieUtil.getCookieValue(request, "refreshToken");
-
-        if (refreshTokenValue != null) {
-            refreshTokenRepository.findByTokenHash(refreshTokenValue)
-                    .ifPresent(refreshTokenRepository::delete);
+    @Transactional
+    public AuthResult refreshToken(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw unauthorized("Refresh token is missing.");
         }
 
-        cookieUtil.clearAuthCookie(response, "accessToken");
-        cookieUtil.clearAuthCookie(response, "refreshToken");
+        String incomingHash = TokenHashUtil.hash(rawRefreshToken);
 
-        return new ApiResponse<>(
-                200,
-                true,
-                "Logout successfully."
+        RefreshToken storedToken = refreshTokenRepository
+                .findByTokenHash(incomingHash)
+                .orElseThrow(() -> {
+                    log.warn("Refresh attempt with unknown token hash");
+                    return unauthorized("Invalid refresh token.");
+                });
+
+        User user = storedToken.getUser();
+
+        if (storedToken.isRevoked()) {
+            log.warn("SECURITY ALERT: Refresh token reuse detected for user id={}. Revoking all sessions.", user.getId());
+            refreshTokenRepository.revokeAllByUser(user);
+            throw unauthorized("Session invalidated. Please log in again.");
+        }
+
+        if (storedToken.getExpiredAt().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(storedToken);
+            throw unauthorized("Refresh token has expired. Please log in again.");
+        }
+
+        storedToken.setRevoked(true);
+        storedToken.setRotatedAt(Instant.now());
+        refreshTokenRepository.save(storedToken);
+
+        String newRefreshToken = jwtService.generateRefreshToken(String.valueOf(user.getId()));
+        saveRefreshToken(user, newRefreshToken);
+
+        List<String> roles = user.getRoles().stream().map(Role::getName).toList();
+        String newAccessToken = jwtService.generateAccessToken(
+                String.valueOf(user.getId()),
+                user.getEmail(),
+                user.getUsername(),
+                roles
         );
+
+        return AuthResult.of(newAccessToken, newRefreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken == null) return;
+
+        refreshTokenRepository
+                .findByTokenHash(TokenHashUtil.hash(rawRefreshToken))
+                .ifPresent(refreshTokenRepository::delete);
+    }
+
+    private void saveRefreshToken(User user, String rawRefreshToken) {
+        RefreshToken entity = new RefreshToken();
+        entity.setTokenHash(TokenHashUtil.hash(rawRefreshToken));
+        entity.setUser(user);
+        entity.setExpiredAt(Instant.now().plusMillis(jwtService.getRefreshTokenExpired()));
+        entity.setRevoked(false);
+        refreshTokenRepository.save(entity);
     }
 }

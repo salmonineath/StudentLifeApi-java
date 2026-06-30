@@ -31,6 +31,9 @@ public class RefreshToken {
     @Column(nullable = false)
     private boolean revoked = false;
 
+    @Column
+    private Instant rotatedAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 }
