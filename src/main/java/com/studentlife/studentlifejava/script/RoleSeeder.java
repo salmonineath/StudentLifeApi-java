@@ -1,11 +1,11 @@
 package com.studentlife.studentlifejava.script;
 
-import com.studentlife.studentlifejava.Entity.Role;
+import com.studentlife.studentlifejava.entity.Roles;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import com.studentlife.studentlifejava.Repository.RoleRepository;
+import com.studentlife.studentlifejava.repository.RoleRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 public class RoleSeeder implements CommandLineRunner{
     
     private final RoleRepository roleRepository;
-
 
     @Override
     public void run(String... args) throws Exception {
@@ -36,7 +35,7 @@ public class RoleSeeder implements CommandLineRunner{
             return;
         }
 
-        roleRepository.save(Role.builder().name(name).build());
+        roleRepository.save(Roles.builder().name(name).build());
 
         log.info("Role seeded successfully.");
     }

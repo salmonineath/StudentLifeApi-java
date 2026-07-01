@@ -7,20 +7,25 @@ spring:
     password: ${DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  admin:
+    username: ${ADMIN_USERNAME}
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate        # Hibernate checks schema matches entities, never touches DDL
+      show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-expire: ${JWT_ACCESS_TOKEN_EXPIRE}
   refresh-token-expire: ${JWT_REFRESH_TOKEN_EXPIRE}
-  
+
 server:
   port: 5000
   forward-headers-strategy: framework
-
-jpa:
-   hibernate:
-     ddl-auto: validate        # Hibernate checks schema matches entities, never touches DDL
-     show-sql: false
-
-flyway:
-  enabled: true
-  locations: classpath:db/migration
