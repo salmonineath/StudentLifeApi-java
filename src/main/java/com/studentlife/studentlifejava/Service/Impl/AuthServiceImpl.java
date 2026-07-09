@@ -113,4 +113,16 @@ public class AuthServiceImpl implements AuthService {
                 new AuthResponse(accessToken, userResponse)
         );
     }
+
+    @Override
+    public ApiResponse<?> logout(HttpServletResponse response) {
+        cookieUtil.clearAuthCookie(response, "accessToken");
+        cookieUtil.clearAuthCookie(response, "refreshToken");
+
+        return new ApiResponse<>(
+                200,
+                true,
+                "Logout successfully."
+        );
+    }
 }

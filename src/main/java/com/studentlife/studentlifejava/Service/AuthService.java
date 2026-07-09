@@ -10,4 +10,6 @@ public interface AuthService {
     ApiResponse<?> register(RegisterRequest request, HttpServletResponse response);
 
     ApiResponse<?> login(AuthRequest request, HttpServletResponse response);
+
+    ApiResponse<?> logout(HttpServletResponse response);
 }
