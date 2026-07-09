@@ -3,7 +3,8 @@ package com.studentlife.studentlifejava.controller;
 import com.studentlife.studentlifejava.dto.request.OtpRequest;
 import com.studentlife.studentlifejava.dto.request.OtpVerificationRequest;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
-import com.studentlife.studentlifejava.otp.OtpService;
+import com.studentlife.studentlifejava.dto.response.ResetTokenResponse;
+import com.studentlife.studentlifejava.service.VerificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,24 +16,49 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class OtpController {
 
-    private final OtpService otpService;
+    private final VerificationService verificationService;
 
     @PostMapping("/otp/request")
     public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequest request) {
-        otpService.generateAndSaveOtp(request.getEmail());
+        verificationService.generateAndSaveOtp(request.getEmail());
 
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "OTP sent. It expires in 5 minutes."));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "OTP sent. It expires in 5 minutes.")
+        );
     }
 
     @PostMapping("/otp/verify")
-    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody OtpVerificationRequest request) {
-        boolean isVerified = otpService.validateAndDestroyOtp(request.getEmail(), request.getOtp());
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyOtp(
+            @Valid @RequestBody OtpVerificationRequest request
+    ) {
+        boolean isVerified = verificationService.validateAndDestroyOtp(
+                request.getEmail(), request.getOtp()
+        );
 
         if (isVerified) {
-            return ResponseEntity.ok(new ApiResponse<>(200, true, "OTP verified successfully."));
+
+            String resetToken = verificationService.generateResetToken(request.getEmail());
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(
+                            200,
+                            true,
+                            "OTP verified successfully.",
+                            new ResetTokenResponse(resetToken)
+                    )
+            );
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiResponse<>(401, false, "Invalid, expired, or already used OTP."));
+                .body(
+                        new ApiResponse<>(
+                                401,
+                                false,
+                                "Invalid, expired, or already used OTP."
+                        )
+                );
     }
 }

@@ -3,6 +3,7 @@ package com.studentlife.studentlifejava.service;
 import com.studentlife.studentlifejava.dto.AuthResult;
 import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
+import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
 
 public interface AuthService {
 
@@ -13,4 +14,6 @@ public interface AuthService {
     AuthResult refreshToken(String rawRefreshToken);
 
     void logout(String rawRefreshToken);
+
+    void resetPassword(ResetPasswordRequest request);
 }

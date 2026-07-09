@@ -3,6 +3,7 @@ package com.studentlife.studentlifejava.controller;
 import com.studentlife.studentlifejava.dto.AuthResult;
 import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
+import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.AuthResponse;
 import com.studentlife.studentlifejava.dto.response.RegisterResponse;
@@ -79,5 +80,20 @@ public class AuthController {
         cookieUtil.clearAuthCookie(response, "accessToken");
         cookieUtil.clearAuthCookie(response, "refreshToken");
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Logout successfully."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+            ) {
+        authService.resetPassword(request);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Password reset successfully"
+                )
+        );
     }
 }
