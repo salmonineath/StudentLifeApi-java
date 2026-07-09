@@ -3,6 +3,7 @@ package com.studentlife.studentlifejava.service.impl;
 import com.studentlife.studentlifejava.dto.AuthResult;
 import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
+import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
 import com.studentlife.studentlifejava.dto.response.UserResponse;
 import com.studentlife.studentlifejava.entity.RefreshToken;
 import com.studentlife.studentlifejava.entity.Roles;
@@ -13,6 +14,7 @@ import com.studentlife.studentlifejava.repository.RefreshTokenRepository;
 import com.studentlife.studentlifejava.repository.RoleRepository;
 import com.studentlife.studentlifejava.repository.UserRepository;
 import com.studentlife.studentlifejava.service.AuthService;
+import com.studentlife.studentlifejava.service.VerificationService;
 import com.studentlife.studentlifejava.utils.TokenHashUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationService verificationService;
 
     @Override
     @Transactional
@@ -153,6 +156,23 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository
                 .findByTokenHash(TokenHashUtil.hash(rawRefreshToken))
                 .ifPresent(refreshTokenRepository::delete);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = verificationService.consumeResetToken(request.getResetToken());
+
+        if (email == null) {
+            throw unauthorized("Invalid or expired reset token");
+        }
+
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> notFound("User not found"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
     }
 
     private void saveRefreshToken(Users user, String rawRefreshToken) {
