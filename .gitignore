@@ -24,6 +24,7 @@ hs_err_pid*
 replay_pid*
 HELP.md
 CHANGES.md
+code-review.html
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
