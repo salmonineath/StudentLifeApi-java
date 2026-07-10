@@ -11,42 +11,27 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 
 @Entity
-@Table(name = "assignments")
+@Table(name = "checklist_items")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Assignment {
+public class ChecklistItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String title;
-
-    private String subject;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "due_date", nullable = false)
-    private Instant dueDate;
-
-    @Column(name = "course_id")
-    private Long courseId;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer progress = 0;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean completed = false;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private Users createdBy;
+    @JoinColumn(name = "task_id", nullable = false)
+    private Task task;
+
+    @Column(nullable = false, length = 1000)
+    private String text;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean done = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

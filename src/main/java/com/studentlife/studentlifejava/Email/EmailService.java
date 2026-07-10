@@ -28,4 +28,17 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendAssignmentInviteEmail(String to, String invitedByName, String assignmentTitle) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(to);
+        message.setSubject("You've been invited to collaborate on \"" + assignmentTitle + "\"");
+        message.setText(
+                invitedByName + " invited you to collaborate on the assignment \"" + assignmentTitle + "\" on StudentLife.\n\n"
+                        + "Log in to StudentLife to accept or decline this invite."
+        );
+
+        mailSender.send(message);
+    }
 }

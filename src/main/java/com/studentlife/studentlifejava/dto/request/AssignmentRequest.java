@@ -13,6 +13,8 @@ public class AssignmentRequest {
     @NotBlank(message = "Title is required")
     private String title;
 
+    private String subject;
+
     private String description;
 
     @NotNull(message = "Due date is required")

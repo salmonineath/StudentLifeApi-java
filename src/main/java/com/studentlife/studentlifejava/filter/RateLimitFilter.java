@@ -15,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -29,8 +30,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/otp/request",
-            "/api/v1/auth/otp/verify"
+            "/api/v1/auth/otp/verify",
+            "/api/v1/assignments/*/invites",
+            "/api/v1/users/search"
     );
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private static final int MAX_REQUESTS = 10;
     private static final Duration WINDOW = Duration.ofMinutes(1);
@@ -50,7 +55,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     @Nonnull FilterChain chain)
             throws ServletException, IOException {
 
-        if (!RATE_LIMITED_PATHS.contains(request.getRequestURI())) {
+        String uri = request.getRequestURI();
+        boolean limited = RATE_LIMITED_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, uri));
+        if (!limited) {
             chain.doFilter(request, response);
             return;
         }

@@ -1,6 +1,7 @@
 package com.studentlife.studentlifejava.service;
 
 import com.studentlife.studentlifejava.dto.request.AssignmentRequest;
+import com.studentlife.studentlifejava.dto.response.AssignmentDetailResponse;
 import com.studentlife.studentlifejava.dto.response.AssignmentResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import org.springframework.data.domain.Page;
@@ -12,9 +13,13 @@ public interface AssignmentService {
 
     Page<AssignmentResponse> list(Users currentUser, Pageable pageable);
 
-    AssignmentResponse get(Long id, Users currentUser);
+    AssignmentDetailResponse get(Long id, Users currentUser);
 
     AssignmentResponse update(Long id, AssignmentRequest request, Users currentUser);
 
     void delete(Long id, Users currentUser);
+
+    AssignmentResponse toggleComplete(Long id, Users currentUser);
+
+    void recalculateProgress(Long id);
 }
