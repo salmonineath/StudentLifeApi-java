@@ -17,6 +17,11 @@ spring:
       ddl-auto: validate        # Hibernate checks schema matches entities, never touches DDL
       show-sql: false
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -55,3 +60,7 @@ app:
   security:
     otp:
       validity-minutes: 5
+  cloudinary:
+    cloud-name: ${CLOUD_NAME}
+    api-key: ${API_KEY}
+    api-secret: ${API_SECRET}

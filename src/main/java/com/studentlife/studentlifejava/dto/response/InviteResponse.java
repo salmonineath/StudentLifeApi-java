@@ -1,5 +1,6 @@
 package com.studentlife.studentlifejava.dto.response;
 
+import com.studentlife.studentlifejava.entity.InviteStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,17 +12,11 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssignmentResponse {
+public class InviteResponse {
 
     private Long id;
-    private String title;
-    private String subject;
-    private String description;
-    private Instant dueDate;
-    private Long courseId;
-    private Integer progress;
-    private Boolean completed;
-    private Long createdById;
+    private Long assignmentId;
+    private String email;
+    private InviteStatus status;
     private Instant createdAt;
-    private Instant updatedAt;
 }

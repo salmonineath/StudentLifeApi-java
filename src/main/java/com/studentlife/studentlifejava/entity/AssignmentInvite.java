@@ -11,42 +11,39 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 
 @Entity
-@Table(name = "assignments")
+@Table(name = "assignment_invites")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Assignment {
+public class AssignmentInvite {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String title;
-
-    private String subject;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "due_date", nullable = false)
-    private Instant dueDate;
-
-    @Column(name = "course_id")
-    private Long courseId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id", nullable = false)
+    private Assignment assignment;
 
     @Column(nullable = false)
-    @Builder.Default
-    private Integer progress = 0;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean completed = false;
+    private String email;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private Users createdBy;
+    @JoinColumn(name = "invited_user_id")
+    private Users invitedUser;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private InviteStatus status = InviteStatus.PENDING;
+
+    @Column(nullable = false, unique = true, length = 64)
+    private String token;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invited_by", nullable = false)
+    private Users invitedBy;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

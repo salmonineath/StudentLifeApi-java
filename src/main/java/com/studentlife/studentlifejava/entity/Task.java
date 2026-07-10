@@ -5,48 +5,54 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "assignments")
+@Table(name = "tasks")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Assignment {
+public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id", nullable = false)
+    private Assignment assignment;
+
     @Column(nullable = false)
     private String title;
-
-    private String subject;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "due_date", nullable = false)
-    private Instant dueDate;
-
-    @Column(name = "course_id")
-    private Long courseId;
-
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     @Builder.Default
-    private Integer progress = 0;
+    private TaskStatus status = TaskStatus.todo;
 
-    @Column(nullable = false)
+    @Column(name = "sort_order", nullable = false)
     @Builder.Default
-    private Boolean completed = false;
+    private Integer sortOrder = 0;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private Users createdBy;
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_assignees",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @BatchSize(size = 20)
+    private Set<Users> assignees = new HashSet<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -2,6 +2,7 @@ package com.studentlife.studentlifejava.controller;
 
 import com.studentlife.studentlifejava.dto.request.AssignmentRequest;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
+import com.studentlife.studentlifejava.dto.response.AssignmentDetailResponse;
 import com.studentlife.studentlifejava.dto.response.AssignmentResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.AssignmentService;
@@ -45,8 +46,8 @@ public class AssignmentController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get a single assignment by ID")
-    public ResponseEntity<ApiResponse<AssignmentResponse>> get(@PathVariable Long id) {
+    @Operation(summary = "Get a single assignment with all its tasks")
+    public ResponseEntity<ApiResponse<AssignmentDetailResponse>> get(@PathVariable Long id) {
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment fetched.",
                 assignmentService.get(id, currentUser())));
     }
@@ -65,6 +66,13 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         assignmentService.delete(id, currentUser());
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment deleted."));
+    }
+
+    @PatchMapping("/{id}/complete")
+    @Operation(summary = "Toggle the completed flag (independent of task progress)")
+    public ResponseEntity<ApiResponse<AssignmentResponse>> toggleComplete(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment completion toggled.",
+                assignmentService.toggleComplete(id, currentUser())));
     }
 
     private Users currentUser() {
