@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -61,8 +63,9 @@ public class SecurityConfig {
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
-                "http://localhost:5173",
-                "https://studentlife-next-beta.vercel.app"
+                "Content-Type",
+                "Accept",
+                "Origin"
         ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

@@ -18,7 +18,7 @@ public class CookieUtil {
     @Value("${jwt.refresh-token-expire}")
     private long refreshTokenExpireMs;
 
-    @Value("${app.secure-cookie:false}")
+    @Value("${app.secure-cookie:true}")
     private boolean secureCookie;
 
     public ResponseCookie buildCookie(String name, String value, long maxAgeSeconds) {
