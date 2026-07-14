@@ -24,6 +24,15 @@ import java.util.UUID;
 
 import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.*;
 
+// KNOWN GAP: this class can create and revoke PENDING invites, but nothing in
+// the codebase ever transitions an invite to ACCEPTED or DECLINED - there is no
+// accept-invite endpoint/service method that consumes AssignmentInvite.token.
+// Practically, this means invited collaborators can never actually join an
+// assignment: AssignmentAccessGuard#isAcceptedMember can never see an ACCEPTED
+// row, so requireMember() only ever admits the assignment owner or a global
+// admin. Needs a real "accept invite by token" flow (and ideally linking
+// invitedUser for invites sent to an email that signs up later) before this
+// feature is usable end-to-end.
 @Service
 @RequiredArgsConstructor
 public class AssignmentInviteServiceImpl implements AssignmentInviteService {
@@ -63,6 +72,11 @@ public class AssignmentInviteServiceImpl implements AssignmentInviteService {
                 .build();
         AssignmentInvite saved = assignmentInviteRepository.save(invite);
 
+        // Sent inside the same transaction as the save: if the SMTP call throws or
+        // is slow, the invite row rolls back too and the DB connection is held
+        // open for the round trip. Acceptable at current volume; move this after
+        // commit (async/event listener) if invite email becomes unreliable or
+        // this method starts showing up in slow-request logs.
         emailService.sendAssignmentInviteEmail(email, currentUser.getFullname(), assignment.getTitle());
 
         return toResponse(saved);
@@ -113,6 +127,8 @@ public class AssignmentInviteServiceImpl implements AssignmentInviteService {
                 .build();
     }
 
+    // Color is deterministic per user id (same user always renders with the same
+    // avatar color across requests/sessions), not random.
     private MemberResponse toMemberResponse(Users user) {
         return MemberResponse.builder()
                 .id(user.getId())

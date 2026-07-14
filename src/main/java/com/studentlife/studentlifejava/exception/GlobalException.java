@@ -1,6 +1,7 @@
 package com.studentlife.studentlifejava.exception;
 
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -53,6 +54,25 @@ public class GlobalException {
                         message,
                         null
                 ));
+    }
+
+    // =========================================
+    // DEV + PROD: Validation errors on @RequestParam/@PathVariable
+    // (@Valid only covers @RequestBody DTOs - constraints on bare method
+    // parameters like @NotBlank @RequestParam need @Validated on the
+    // controller class, which throws this instead of MethodArgumentNotValidException)
+    // =========================================
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<String>> handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(v -> v.getMessage())
+                .orElse("Validation failed");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(400, false, message, null));
     }
 
     // =========================================

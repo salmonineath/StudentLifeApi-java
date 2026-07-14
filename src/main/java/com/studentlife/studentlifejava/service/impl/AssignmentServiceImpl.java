@@ -134,6 +134,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .build();
     }
 
+    // Batches checklist/attachment lookups into two IN-clause queries and groups
+    // them by task id in memory, instead of calling task.getChecklist() per task
+    // in the loop below - avoids an N+1 query per assignment detail view.
     private AssignmentDetailResponse toDetailResponse(Assignment a, List<Task> tasks) {
         Map<Long, List<ChecklistItemResponse>> checklistByTaskId = tasks.isEmpty()
                 ? Map.of()

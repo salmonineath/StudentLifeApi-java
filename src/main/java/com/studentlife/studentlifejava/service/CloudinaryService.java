@@ -23,6 +23,10 @@ public class CloudinaryService {
             throw badRequest("File must not be empty.");
         }
         try {
+            // "auto" lets Cloudinary classify image/video/raw itself. Whatever it
+            // picks is stored on the Attachment and must be passed back unchanged
+            // to delete() below - a mismatched resource_type makes the delete
+            // call silently fail (see delete()'s comment).
             var result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
                     "resource_type", "auto"
             ));
@@ -40,6 +44,11 @@ public class CloudinaryService {
         try {
             cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
         } catch (Exception e) {
+            // Deliberately swallowed: callers (attachment delete, and the upload
+            // rollback path) must still remove/proceed even if Cloudinary is down.
+            // Trade-off: a failed delete here is only visible in logs, so storage
+            // can quietly accumulate orphaned assets if Cloudinary errors go
+            // unnoticed - worth an alert on this log line if that becomes a problem.
             log.warn("Cloudinary delete failed for publicId={}, continuing anyway", publicId, e);
         }
     }

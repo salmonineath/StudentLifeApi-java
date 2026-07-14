@@ -1,6 +1,5 @@
 package com.studentlife.studentlifejava.exception;
 
-import jakarta.persistence.GeneratedValue;
 import lombok.Getter;
 
 @Getter

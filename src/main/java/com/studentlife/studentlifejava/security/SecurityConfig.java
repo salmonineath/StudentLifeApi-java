@@ -36,6 +36,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // CSRF is disabled because this is a stateless JSON API, but auth still
+                // rides on httpOnly cookies (see CookieUtil) which browsers attach
+                // automatically cross-site. The only thing standing in for CSRF
+                // protection here is the strict CORS origin allow-list below - it must
+                // never include "*", and allowCredentials(true) means Spring Security
+                // will refuse to start if it ever did.
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
@@ -55,6 +61,9 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        // app.cors.allowed-origins must be an explicit list, never "*" - combined with
+        // allowCredentials(true) below, this allow-list is the app's actual CSRF
+        // defense (see the comment on securityFilterChain).
         List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
                 .map(String::trim)
                 .toList();

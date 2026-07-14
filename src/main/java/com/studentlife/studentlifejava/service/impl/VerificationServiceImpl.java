@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +28,9 @@ public class VerificationServiceImpl implements VerificationService {
 
     @Value("${app.security.otp.validity-minutes}")
     private long otpValidityMinutes;
+
+    @Value("${app.security.reset-token.validity-minutes}")
+    private long resetTokenValidityMinutes;
 
     @Override
     public void generateAndSaveOtp(String email) {
@@ -45,8 +50,25 @@ public class VerificationServiceImpl implements VerificationService {
     public boolean validateAndDestroyOtp(String email, String clientOtp) {
         String key = REDIS_PREFIX + email;
 
-        String serverOtp = stringRedisTemplate.opsForValue().getAndDelete(key);
-        return serverOtp != null && serverOtp.equals(clientOtp);
+        // Only fetch here - deleting on every attempt would let a single mistyped
+        // digit burn the OTP and force the user to request a brand new one.
+        String serverOtp = stringRedisTemplate.opsForValue().get(key);
+        if (serverOtp == null) {
+            return false;
+        }
+
+        // Constant-time compare: a 6-digit OTP has few enough possibilities that
+        // String.equals' early-exit-on-mismatch could leak timing information.
+        boolean matches = MessageDigest.isEqual(
+                serverOtp.getBytes(StandardCharsets.UTF_8),
+                clientOtp.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Only consume the OTP once it's actually been used successfully.
+        if (matches) {
+            stringRedisTemplate.delete(key);
+        }
+        return matches;
     }
 
     @Override
@@ -57,7 +79,7 @@ public class VerificationServiceImpl implements VerificationService {
         stringRedisTemplate.opsForValue().set(
                 PASSWORD_RESET_PREFIX + token,
                 email,
-                10,
+                resetTokenValidityMinutes,
                 TimeUnit.MINUTES
         );
 

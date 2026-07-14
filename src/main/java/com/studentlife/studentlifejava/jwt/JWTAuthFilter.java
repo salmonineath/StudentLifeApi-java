@@ -80,6 +80,6 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7).strip();
             return token.isEmpty() ? null : token;
         }
-        return cookieUtil.getCookieValue(request, "accessToken");
+        return cookieUtil.getCookieValue(request, CookieUtil.ACCESS_TOKEN_COOKIE);
     }
 }

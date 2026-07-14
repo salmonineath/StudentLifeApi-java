@@ -1,6 +1,36 @@
 # StudentLife — Backend API
 
-A digital productivity and collaboration platform for Cambodian university students. Students currently rely on scattered tools (Telegram, Facebook groups, handwritten notes) to manage academic life. StudentLife centralizes everything into one platform.
+A digital productivity and collaboration platform for university students. Students
+currently juggle assignments, deadlines, and group work across scattered tools
+(Telegram, Facebook groups, handwritten notes). StudentLife centralizes assignment
+tracking, task management, and file sharing into a single backend API.
+
+This is a Spring Boot REST API — the backend half of a final project, actively under
+development.
+
+---
+
+## Core Features
+
+- **Authentication** — register/login with JWT access + refresh tokens delivered as
+  httpOnly cookies, refresh-token rotation with reuse detection, logout, and
+  role-based access control (student / admin).
+- **Password reset via OTP** — a 6-digit code emailed to the user, verified against a
+  Redis-backed store, exchanged for a short-lived reset token to set a new password.
+- **Assignment tracking** — create assignments with a subject, due date, and
+  description; completion progress is calculated automatically as a percentage of
+  completed tasks.
+- **Task management** — per-assignment tasks with status (`todo` / `progress` /
+  `done`), multiple assignees, manual reordering, checklists, and file attachments.
+- **File attachments** — upload/delete task attachments backed by Cloudinary
+  (images, documents, etc.).
+- **Collaboration invites** — assignment owners can invite a collaborator by email
+  (see [Under Development](#under-development--known-gaps) below for current
+  limitations).
+- **User search** — email-prefix autocomplete for adding collaborators.
+- **Rate limiting** — per-IP request throttling on sensitive endpoints (login,
+  register, OTP, search, invites) to slow down brute-force/abuse attempts.
+- **Scheduled cleanup** — a daily job purges expired and revoked refresh tokens.
 
 ---
 
@@ -9,30 +39,58 @@ A digital productivity and collaboration platform for Cambodian university stude
 | Category | Technology |
 |---|---|
 | Language | Java 21 |
-| Framework | Spring Boot 3.5.11 |
+| Framework | Spring Boot 3.5.15 |
 | Build Tool | Maven |
 | Security | Spring Security + JWT (JJWT 0.12.6) |
 | ORM | Spring Data JPA / Hibernate |
-| Database | PostgreSQL (Neon serverless) |
-| Real-time | Spring WebSocket — STOMP over SockJS |
-| Email | Spring Mail — Gmail SMTP |
-| Image Storage | Cloudinary |
-| AI Integration | Groq API — Llama 3.1 8B Instant |
-| Push Notifications | OneSignal |
-| Code Generation | Lombok, MapStruct 1.5.5 |
-| API Docs | SpringDoc OpenAPI 2.8.8 (Swagger UI) |
-| Containerization | Docker, Docker Compose |
-| CI/CD | GitHub Actions + Render |
+| Database | PostgreSQL |
+| Migrations | Flyway |
+| Cache / OTP store | Redis |
+| Rate limiting | Bucket4j + Caffeine |
+| Email | Spring Mail (SMTP) |
+| File storage | Cloudinary |
+| Code generation | Lombok, MapStruct 1.5.5 |
+| API docs | SpringDoc OpenAPI 2.7.0 (Swagger UI) |
+| Containerization | Docker, Docker Compose, Nginx reverse proxy |
 
 ---
 
-## Getting Started Locally
+## How to Run
 
 ### Prerequisites
 
 - Java 21
-- Maven
-- Docker & Docker Compose (or a local PostgreSQL instance)
+- Maven (or use the bundled `./mvnw` wrapper)
+- Docker & Docker Compose, or a local PostgreSQL + Redis instance
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+DATASOURCE_URL=
+DATASOURCE_USERNAME=
+DATASOURCE_PASSWORD=
+
+JWT_SECRET=
+JWT_ACCESS_TOKEN_EXPIRE=
+JWT_REFRESH_TOKEN_EXPIRE=
+
+REDIS_HOST=
+
+MAIL_USERNAME=
+MAIL_PASSWORD=
+
+CLOUD_NAME=
+API_KEY=
+API_SECRET=
+
+ADMIN_USERNAME=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+CORS_ALLOWED_ORIGINS=
+```
 
 ### Option 1: Run with Docker
 
@@ -40,172 +98,31 @@ A digital productivity and collaboration platform for Cambodian university stude
 docker compose up --build
 ```
 
+This starts the app, a Redis container, and an Nginx reverse proxy together.
+
 ### Option 2: Run with Maven
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Server starts on **port 5000** by default.
-
-### Environment Variables
-
-Create a `.env` file in the project root with the following:
-
-```env
-DATABASE_URL=
-DATABASE_USERNAME=
-DATABASE_PASSWORD=
-JWT_SECRET=
-JWT_EXPIRATION=
-JWT_REFRESH_EXPIRATION=
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-MAIL_USERNAME=
-MAIL_PASSWORD=
-GROQ_API_KEY=
-ONESIGNAL_APP_ID=
-ONESIGNAL_API_KEY=
-FRONTEND_URL=
-BACKEND_URL=
-ADMIN_EMAIL=
-ADMIN_PASSWORD=
-ADMIN_USERNAME=
-```
+The server starts on **port 5000** by default. Flyway runs migrations
+automatically on startup; roles and an admin user are seeded automatically if
+they don't already exist.
 
 ---
 
-## Project Structure
+## Under Development / Known Gaps
 
-```
-src/main/java/com/studentlife/studentlifejava/
-├── Config/          # Spring beans (security, app config)
-├── Controller/      # REST controllers
-├── DTO/
-│   ├── Request/     # Incoming request bodies
-│   └── Response/    # Outgoing response shapes
-├── Entity/          # JPA entities (database tables)
-├── Exception/       # Custom exceptions + global handler
-├── JWT/             # JWT generation and validation
-├── Repository/      # Spring Data JPA repositories
-├── Security/        # Security filter chain config
-└── Service/
-    └── Impl/        # Service implementations
-```
+- **Collaboration invites are not end-to-end functional yet.** An owner can send and
+  revoke a pending invite, but there is no accept/decline flow yet — invited users
+  can't actually become collaborators on an assignment until that's built.
+- **Invite expiry** isn't implemented — pending invites don't currently expire.
+- **Schedule management, group chat, in-app/push notifications, and AI-assisted
+  study planning** are on the roadmap but not implemented in this codebase yet.
 
 ---
 
-## Database Schema
+## License
 
-12 entities total:
-
-| Entity | Purpose |
-|---|---|
-| `Users` | Auth info, university details, roles, active status |
-| `Roles` | Role definitions — `ROLE_ADMIN`, `ROLE_STUDENT` |
-| `UserProfile` | Extended profile data (one-to-one with Users) |
-| `Assignments` | Projects with title, subject, due date, status, progress |
-| `AssignmentMembers` | Collaboration — invite tokens, status (`INVITED` / `ACCEPTED` / `DECLINED`) |
-| `Schedules` | One-time or recurring calendar events |
-| `GroupMessage` | Chat messages scoped to an assignment |
-| `GroupChatMember` | Join/leave timestamps per user per group |
-| `Notification` | In-app notifications with type and read status |
-| `UserDevices` | Device info per user session |
-| `RefreshToken` | Stored refresh tokens with expiry for rotation |
-| `ReminderLog` | Tracks last reminder sent per assignment |
-| `PasswordOTP` | OTP records for password reset flow |
-
----
-
-## API Reference
-
-**Base URL:** `https://studentlifeapis.onrender.com`  
-**Version prefix:** `/api/v1`  
-**Swagger UI:** `/swagger-ui.html`  
-**OpenAPI JSON:** `/v3/docs`
-
-| Module | Prefix | Key Endpoints |
-|---|---|---|
-| Authentication | `/api/v1/auth` | register, login, refresh, logout |
-| Password Reset | `/api/v1/auth` | otp-request, verify-otp, reset-password |
-| Current User | `/api/v1/me` | get profile, update profile, devices |
-| Admin — Users | `/api/v1/admin/users` | list, get, create, update, disable, enable, delete |
-| Assignments | `/api/v1/assignments` | CRUD, progress, invite, join, members |
-| Schedules | `/api/v1/schedule` | one-time, recurring, update, delete |
-| Group Chat (REST) | `/api/v1/chat` | history, members, clear |
-| Notifications | `/api/v1/notification` | list, unread count, mark read, delete |
-| AI Study Plan | `/api/v1/study-plan` | generate per assignment |
-| Push Notifications | `/api/v1/register` | register OneSignal player ID |
-| Health Check | `/health` | server status |
-
----
-
-## Real-time (WebSocket)
-
-WebSocket endpoint: `/api/v1/ws` (STOMP over SockJS)  
-Authentication: JWT passed on STOMP handshake.
-
-| Channel | Purpose |
-|---|---|
-| `/app/chat.send` | Send a message to an assignment group chat |
-| `/app/chat.join` | Broadcast join presence event |
-| `/app/chat.leave` | Broadcast leave presence event |
-| `/topic/group/{assignmentId}` | Subscribe to incoming messages |
-| `/topic/presence/{assignmentId}` | Subscribe to presence events |
-| `/user/queue/notifications` | Subscribe to personal notifications |
-
----
-
-## Security Model
-
-- Passwords hashed with **BCrypt**
-- JWT stored in **HTTP-only cookies** (HTTPS-only in production) and optionally as Bearer tokens
-- Access token: **15-minute** expiry
-- Refresh token: **30-day** expiry with rotation
-- Role-based authorization via `@PreAuthorize`
-- WebSocket connections authenticated via `WebSocketAuthInterceptor`
-- Errors never expose stack traces to clients
-
----
-
-## Core Features
-
-1. **Authentication** — Register, login, JWT refresh, logout, role-based access
-2. **Password Reset** — OTP sent to email, verify, then reset
-3. **User Profile** — View/update profile, upload avatar via Cloudinary
-4. **Dashboard** — Today's schedule, assignment summary, upcoming deadlines
-5. **Schedule Management** — One-time and recurring events
-6. **Assignment Tracker** — Create, track progress (0–100%), statuses: `PENDING` / `IN_PROGRESS` / `COMPLETED` / `OVERDUE`
-7. **Collaboration** — Invite by email or shareable token link
-8. **Group Chat** — Real-time per-assignment chat, paginated history, auto-delete after 5 days
-9. **Notifications** — In-app, email (deadline reminders at 72h / 24h / 2h), push via OneSignal
-10. **Device Tracking** — Tracks browser, OS, IP per session
-11. **AI Study Plan** — Generates a day-by-day study plan using Groq + Llama 3.1 8B
-
----
-
-## CI/CD Pipeline
-
-**CI** triggers on push/PR to `develop` or `main`:
-1. Checkout → Java 21 setup → Maven cache → Build → Test
-
-**CD** triggers on push to `main` only:
-1. Sends deploy hook to Render → Render rebuilds Docker container
-
-### Infrastructure
-
-| Component | Platform |
-|---|---|
-| Backend | Render.com (Docker, port 5000) |
-| Database | Neon serverless PostgreSQL |
-| Image Storage | Cloudinary |
-
----
-
-## Roles
-
-| Role | Access |
-|---|---|
-| `ROLE_STUDENT` | Default on register — access to own data, assignments, chat |
-| `ROLE_ADMIN` | Full access — user management, admin endpoints |
+Distributed under the MIT License. See [LICENSE](./LICENSE) for details.

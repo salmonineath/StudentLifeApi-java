@@ -1,13 +1,11 @@
 package com.studentlife.studentlifejava.utils;
 
-import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-@Component
+// Static utility, called directly as TokenHashUtil.hash(...) - not a Spring bean.
 public class TokenHashUtil {
 
     private TokenHashUtil() {

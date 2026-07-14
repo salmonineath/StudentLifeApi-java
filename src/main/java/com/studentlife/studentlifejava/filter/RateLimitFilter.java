@@ -7,10 +7,12 @@ import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,15 +39,25 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    private static final int MAX_REQUESTS = 10;
-    private static final Duration WINDOW = Duration.ofMinutes(1);
+    // Externalized so ops can tune brute-force resistance vs. false-positive
+    // lockouts (e.g. many students behind one university NAT) without a redeploy.
+    @Value("${app.rate-limit.max-requests:10}")
+    private int maxRequests;
+
+    @Value("${app.rate-limit.window-seconds:60}")
+    private long windowSeconds;
 
     // Caffeine cache replaces the old unbounded ConcurrentHashMap.
     // Entries expire 2 windows after last access, capped at 100k IPs to bound memory.
-    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
-            .expireAfterAccess(WINDOW.multipliedBy(2))
-            .maximumSize(100_000)
-            .build();
+    private Cache<String, Bucket> buckets;
+
+    @PostConstruct
+    private void init() {
+        buckets = Caffeine.newBuilder()
+                .expireAfterAccess(Duration.ofSeconds(windowSeconds).multipliedBy(2))
+                .maximumSize(100_000)
+                .build();
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -78,14 +90,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private Bucket newBucket() {
         return Bucket.builder()
                 .addLimit(Bandwidth.builder()
-                        .capacity(MAX_REQUESTS)
-                        .refillIntervally(MAX_REQUESTS, WINDOW)
+                        .capacity(maxRequests)
+                        .refillIntervally(maxRequests, Duration.ofSeconds(windowSeconds))
                         .build())
                 .build();
     }
 
     // Resolution priority matches the trust chain in this stack:
-    // Cloudflare tunnel → nginx (X-Real-IP) → generic proxy → direct connection
+    // Cloudflare tunnel → nginx (X-Real-IP) → generic proxy → direct connection.
+    // IMPORTANT: every one of these headers is client-controllable. This filter's
+    // entire rate-limiting guarantee depends on the reverse proxy actually
+    // stripping/overwriting them before requests reach this app - if this app is
+    // ever exposed directly to the internet (proxy bypassed or misconfigured),
+    // any client can spoof CF-Connecting-IP/X-Real-IP and get a fresh bucket per
+    // request, bypassing the limit entirely. That guarantee lives in the nginx/
+    // Cloudflare config, not in this code.
     private String resolveClientIp(HttpServletRequest request) {
         String cfIp = request.getHeader("CF-Connecting-IP");
         if (cfIp != null && !cfIp.isBlank()) {

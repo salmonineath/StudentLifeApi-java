@@ -46,7 +46,16 @@ public class AttachmentServiceImpl implements AttachmentService {
                 .uploadedBy(currentUser)
                 .uploadedAt(Instant.now())
                 .build();
-        return toResponse(attachmentRepository.save(attachment));
+
+        try {
+            return toResponse(attachmentRepository.save(attachment));
+        } catch (RuntimeException e) {
+            // The file already landed in Cloudinary before this save - without this
+            // cleanup, a DB failure here (constraint violation, connection drop)
+            // leaves it orphaned and billed forever with no record pointing to it.
+            cloudinaryService.delete(result.publicId(), result.resourceType());
+            throw e;
+        }
     }
 
     @Override
