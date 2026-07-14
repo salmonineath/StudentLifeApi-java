@@ -7,6 +7,7 @@ import com.studentlife.studentlifejava.dto.response.ResetTokenResponse;
 import com.studentlife.studentlifejava.service.VerificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,11 @@ public class OtpController {
 
     private final VerificationService verificationService;
 
+    // Kept in sync with app.security.otp.validity-minutes so this message never
+    // drifts out of sync with the actual TTL configured for VerificationServiceImpl.
+    @Value("${app.security.otp.validity-minutes}")
+    private long otpValidityMinutes;
+
     @PostMapping("/otp/request")
     public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody OtpRequest request) {
         verificationService.generateAndSaveOtp(request.getEmail());
@@ -26,7 +32,7 @@ public class OtpController {
                 new ApiResponse<>(
                         200,
                         true,
-                        "OTP sent. It expires in 5 minutes.")
+                        "OTP sent. It expires in " + otpValidityMinutes + " minutes.")
         );
     }
 

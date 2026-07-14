@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
+// Must run before AdminSeeder (@Order(2)) - AdminSeeder looks up the "admin"
+// role by name and just logs a warning and skips seeding if it's missing, so
+// getting this ordering wrong doesn't fail loudly, it just silently produces
+// no admin user.
 @Slf4j
 @Component
 @RequiredArgsConstructor

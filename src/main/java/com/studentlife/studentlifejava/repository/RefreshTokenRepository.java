@@ -24,7 +24,18 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     void deleteByTokenHash(String tokenHash);
 
+    // Conditional UPDATE used as an atomic compare-and-set: two concurrent refresh
+    // requests presenting the same token can both read revoked=false, but only one
+    // can win this update (returns 1). The loser sees 0 and is treated as reuse.
+    // Read-then-save on the entity would have a TOCTOU gap; this doesn't.
     @Modifying
-    @Query("DELETE FROM RefreshToken rt WHERE rt.expiredAt < :expiry")
+    @Query("UPDATE RefreshToken rt SET rt.revoked = true WHERE rt.id = :id AND rt.revoked = false")
+    int revokeIfActive(@Param("id") Long id);
+
+    // Also purges revoked rows regardless of expiry - otherwise every rotated or
+    // reuse-detected token sits in the table until its original expiry date, even
+    // though it can never be used again. Never touches a still-active token.
+    @Modifying
+    @Query("DELETE FROM RefreshToken rt WHERE rt.expiredAt < :expiry OR rt.revoked = true")
     int deleteAllByExpiredAtBefore(@Param("expiry") Instant expiry);
 }

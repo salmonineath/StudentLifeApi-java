@@ -12,6 +12,12 @@ import java.time.Duration;
 @Component
 public class CookieUtil {
 
+    // Single source of truth for these names - they used to be duplicated as
+    // string literals in JWTAuthFilter and AuthController, which is one typo away
+    // from silently breaking auth.
+    public static final String ACCESS_TOKEN_COOKIE = "accessToken";
+    public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+
     @Value("${jwt.access-token-expire}")
     private long accessTokenExpireMs;
 
@@ -27,18 +33,22 @@ public class CookieUtil {
                 .secure(secureCookie)
                 .path("/")
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
+                // SameSite=None requires Secure=true - browsers reject the cookie
+                // otherwise. Ties directly to secureCookie rather than an env flag so
+                // the two can never drift out of sync. Lax is only safe for local
+                // http dev where Secure is off anyway.
                 .sameSite(secureCookie ? "None" : "Lax")
                 .build();
     }
 
     public void setAccessTokenCookie(HttpServletResponse response, String value) {
         long maxAge = accessTokenExpireMs / 1000;
-        response.addHeader("Set-Cookie", buildCookie("accessToken", value, maxAge).toString());
+        response.addHeader("Set-Cookie", buildCookie(ACCESS_TOKEN_COOKIE, value, maxAge).toString());
     }
 
     public void setRefreshTokenCookie(HttpServletResponse response, String value) {
         long maxAge = refreshTokenExpireMs / 1000;
-        response.addHeader("Set-Cookie", buildCookie("refreshToken", value, maxAge).toString());
+        response.addHeader("Set-Cookie", buildCookie(REFRESH_TOKEN_COOKIE, value, maxAge).toString());
     }
 
     public void clearAuthCookie(HttpServletResponse response, String name) {

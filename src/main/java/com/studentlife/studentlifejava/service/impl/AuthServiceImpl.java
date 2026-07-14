@@ -79,11 +79,13 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResult login(AuthRequest request) {
         String identifier = request.getEmail_or_username();
+        // Same status + message for "no such user" and "wrong password" - a
+        // distinct 404 here would let callers enumerate valid emails/usernames.
         Users user = userRepository.findByEmailOrUsername(identifier, identifier)
-                .orElseThrow(() -> notFound("User not found."));
+                .orElseThrow(() -> unauthorized("Invalid credentials."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw validation("Invalid credentials.");
+            throw unauthorized("Invalid credentials.");
         }
 
         List<String> roles = user.getRoles().stream().map(Roles::getName).toList();
@@ -130,9 +132,17 @@ public class AuthServiceImpl implements AuthService {
             throw unauthorized("Refresh token has expired. Please log in again.");
         }
 
-        storedToken.setRevoked(true);
+        // Atomic compare-and-set instead of read-then-save: closes the race where
+        // two concurrent requests for the same token both pass the isRevoked()
+        // check above and both rotate successfully. Losing this update means
+        // another request already won the rotation for this exact token.
+        int rotated = refreshTokenRepository.revokeIfActive(storedToken.getId());
+        if (rotated == 0) {
+            log.warn("SECURITY ALERT: Concurrent refresh detected for user id={}. Revoking all sessions.", user.getId());
+            refreshTokenRepository.revokeAllByUser(user);
+            throw unauthorized("Session invalidated. Please log in again.");
+        }
         storedToken.setRotatedAt(Instant.now());
-        refreshTokenRepository.save(storedToken);
 
         String newRefreshToken = jwtService.generateRefreshToken(String.valueOf(user.getId()));
         saveRefreshToken(user, newRefreshToken);
@@ -173,6 +183,10 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);
+
+        // A password reset should end every existing session - otherwise a stolen
+        // refresh token survives the very action meant to lock the attacker out.
+        refreshTokenRepository.revokeAllByUser(user);
     }
 
     private void saveRefreshToken(Users user, String rawRefreshToken) {

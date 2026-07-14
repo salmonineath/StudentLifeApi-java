@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -34,6 +35,10 @@ public class RefreshToken {
     @Column
     private Instant rotatedAt;
 
+    // Set by Hibernate at persist time, not construction time - matches the
+    // pattern Users.createdAt uses, and survives object reconstruction (test
+    // fixtures, batch jobs) unlike a plain field initializer would.
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 }

@@ -49,7 +49,9 @@ public class TaskServiceImpl implements TaskService {
         Assignment assignment = findAssignment(assignmentId);
         accessGuard.requireMember(assignment, currentUser);
 
-        long nextOrder = taskRepository.countByAssignment(assignment);
+        // Must derive from the max sortOrder, not a row count - deleting a task
+        // leaves a gap, and countByAssignment would reissue an already-taken order.
+        long nextOrder = taskRepository.findMaxSortOrder(assignment) + 1;
 
         Task task = Task.builder()
                 .assignment(assignment)
@@ -106,10 +108,14 @@ public class TaskServiceImpl implements TaskService {
         Set<Long> existingIds = tasks.stream().map(Task::getId).collect(Collectors.toSet());
         Set<Long> requestedIds = new HashSet<>(request.getOrderedIds());
 
+        // Set equality (not subset) rejects partial reorders outright - the client
+        // must submit a full permutation of this assignment's task ids.
         if (!existingIds.equals(requestedIds)) {
             throw badRequest("orderedIds must contain exactly the tasks belonging to this assignment.");
         }
 
+        // indexOf() in a loop is O(n^2), fine for the small per-assignment task
+        // lists this feature targets. Swap to an id->index map first if that changes.
         List<Long> orderedIds = request.getOrderedIds();
         for (Task task : tasks) {
             task.setSortOrder(orderedIds.indexOf(task.getId()));

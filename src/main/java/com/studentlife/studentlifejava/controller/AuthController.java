@@ -60,7 +60,7 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        String rawRefreshToken = cookieUtil.getCookieValue(request, "refreshToken");
+        String rawRefreshToken = cookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE);
         AuthResult result = authService.refreshToken(rawRefreshToken);
         cookieUtil.setAccessTokenCookie(response, result.accessToken());
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
@@ -75,10 +75,10 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        String rawRefreshToken = cookieUtil.getCookieValue(request, "refreshToken");
+        String rawRefreshToken = cookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE);
         authService.logout(rawRefreshToken);
-        cookieUtil.clearAuthCookie(response, "accessToken");
-        cookieUtil.clearAuthCookie(response, "refreshToken");
+        cookieUtil.clearAuthCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE);
+        cookieUtil.clearAuthCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE);
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Logout successfully."));
     }
 

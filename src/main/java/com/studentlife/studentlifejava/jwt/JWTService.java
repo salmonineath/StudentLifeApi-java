@@ -61,6 +61,11 @@ public class JWTService {
         return buildToken(claims, userId, accessTokenExpired);
     }
 
+    // Not a JWT, unlike the access token - refresh tokens are opaque random
+    // secrets, hashed and looked up server-side (see AuthServiceImpl /
+    // TokenHashUtil), which is what makes revocation and reuse-detection possible.
+    // The userId parameter is intentionally unused: the token itself carries no
+    // identity, only the DB row it's hashed against does.
     public String generateRefreshToken(String userId) {
         return UUID.randomUUID().toString();
     }
@@ -118,6 +123,9 @@ public class JWTService {
     /**
      * Single-parse validation: verifies signature, expiry, and token type in one shot.
      * Returns the subject (userId) on success; throws JwtException on any failure.
+     * Prefer this over extractUserId()/extractTokenType() separately - calling
+     * those directly skips the type check below and would let a non-access token
+     * (if one is ever minted) authenticate as if it were one.
      */
     public String extractUserIdFromAccessToken(String token) {
         Claims claims = extractAllClaims(token);

@@ -45,6 +45,12 @@ public class AdminSeeder implements CommandLineRunner {
 
     private void seedAdmin() {
 
+        // Idempotency check is keyed on email only. If ADMIN_EMAIL ever changes
+        // between deploys while ADMIN_USERNAME stays the same, this won't detect
+        // the existing admin row and will try to insert a second user with the
+        // same username, which the DB's unique constraint rejects - crashing
+        // startup instead of failing gracefully. Rotate both together, or clean
+        // up the old admin row first.
         if (userRepository.existsByEmail(adminEmail)) {
             log.info("Admin already exist skip");
             return;

@@ -60,6 +60,11 @@ app:
   security:
     otp:
       validity-minutes: 5
+    reset-token:
+      validity-minutes: 10
+  rate-limit:
+    max-requests: 10
+    window-seconds: 60
   cloudinary:
     cloud-name: ${CLOUD_NAME}
     api-key: ${API_KEY}
