@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.*;
@@ -110,6 +109,22 @@ public class AssignmentInviteServiceImpl implements AssignmentInviteService {
                 });
 
         return members.stream().map(this::toMemberResponse).toList();
+    }
+
+    @Override
+    @Transactional
+    public void acceptInvite(String token, Users currentUser) {
+        AssignmentInvite invite = assignmentInviteRepository
+                .findByToken(token)
+                .orElseThrow(() -> notFound("This invite link is invalid"));
+
+        if (invite.getStatus() != InviteStatus.PENDING) {
+            throw badRequest("This invite has already been used");
+        }
+
+        invite.setStatus(InviteStatus.ACCEPTED);
+        invite.setInvitedUser(currentUser);
+        assignmentInviteRepository.save(invite);
     }
 
     private Assignment findAssignment(Long assignmentId) {

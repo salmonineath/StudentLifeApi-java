@@ -5,7 +5,6 @@ import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
 import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
-import com.studentlife.studentlifejava.dto.response.AuthResponse;
 import com.studentlife.studentlifejava.dto.response.RegisterResponse;
 import com.studentlife.studentlifejava.service.AuthService;
 import com.studentlife.studentlifejava.utils.CookieUtil;
@@ -37,12 +36,12 @@ public class AuthController {
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
         return ResponseEntity.status(201).body(new ApiResponse<>(
                 201, true, "Registered successfully.",
-                new RegisterResponse(result.accessToken(), result.user())
+                new RegisterResponse(result.user())
         ));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(
+    public ResponseEntity<ApiResponse<Void>> login(
             @Valid @RequestBody AuthRequest request,
             HttpServletResponse response
     ) {
@@ -50,13 +49,12 @@ public class AuthController {
         cookieUtil.setAccessTokenCookie(response, result.accessToken());
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
         return ResponseEntity.ok(new ApiResponse<>(
-                200, true, "Login successfully.",
-                new AuthResponse(result.accessToken())
+                200, true, "Login successfully."
         ));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+    public ResponseEntity<ApiResponse<Void>> refresh(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -65,8 +63,9 @@ public class AuthController {
         cookieUtil.setAccessTokenCookie(response, result.accessToken());
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
         return ResponseEntity.ok(new ApiResponse<>(
-                200, true, "Token refreshed successfully.",
-                new AuthResponse(result.accessToken())
+                200,
+                true,
+                "Token refreshed successfully."
         ));
     }
 
@@ -79,7 +78,11 @@ public class AuthController {
         authService.logout(rawRefreshToken);
         cookieUtil.clearAuthCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE);
         cookieUtil.clearAuthCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE);
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Logout successfully."));
+        return ResponseEntity.ok(new ApiResponse<>(
+                200,
+                true,
+                "Logout successfully."
+        ));
     }
 
     @PostMapping("/reset-password")

@@ -75,11 +75,6 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7).strip();
-            return token.isEmpty() ? null : token;
-        }
         return cookieUtil.getCookieValue(request, CookieUtil.ACCESS_TOKEN_COOKIE);
     }
 }

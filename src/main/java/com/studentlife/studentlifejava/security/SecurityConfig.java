@@ -74,7 +74,8 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of(
                 "Content-Type",
                 "Accept",
-                "Origin"
+                "Origin",
+                "Authorization"
         ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

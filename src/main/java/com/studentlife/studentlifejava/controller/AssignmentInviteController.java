@@ -6,6 +6,7 @@ import com.studentlife.studentlifejava.dto.response.InviteResponse;
 import com.studentlife.studentlifejava.dto.response.MemberResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.AssignmentInviteService;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,13 +26,14 @@ import java.util.List;
 public class AssignmentInviteController {
 
     private final AssignmentInviteService assignmentInviteService;
+    private final AuthUtil authUtil;
 
     @PostMapping("/invites")
     @Operation(summary = "Invite a user by email (owner/admin only)")
     public ResponseEntity<ApiResponse<InviteResponse>> invite(
             @PathVariable Long assignmentId,
             @Valid @RequestBody InviteRequest request) {
-        InviteResponse response = assignmentInviteService.invite(assignmentId, request, currentUser());
+        InviteResponse response = assignmentInviteService.invite(assignmentId, request, authUtil.getAuthenticatedUser());
         return ResponseEntity.status(201).body(new ApiResponse<>(201, true, "Invite sent.", response));
     }
 
@@ -40,7 +42,7 @@ public class AssignmentInviteController {
     public ResponseEntity<ApiResponse<Void>> revoke(
             @PathVariable Long assignmentId,
             @PathVariable String email) {
-        assignmentInviteService.revoke(assignmentId, email, currentUser());
+        assignmentInviteService.revoke(assignmentId, email, authUtil.getAuthenticatedUser());
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Invite revoked."));
     }
 
@@ -48,10 +50,6 @@ public class AssignmentInviteController {
     @Operation(summary = "List the assignment's owner and accepted members")
     public ResponseEntity<ApiResponse<List<MemberResponse>>> members(@PathVariable Long assignmentId) {
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Members fetched.",
-                assignmentInviteService.members(assignmentId, currentUser())));
-    }
-
-    private Users currentUser() {
-        return (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                assignmentInviteService.members(assignmentId, authUtil.getAuthenticatedUser())));
     }
 }
