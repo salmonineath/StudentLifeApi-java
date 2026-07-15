@@ -4,6 +4,7 @@ import com.studentlife.studentlifejava.dto.AuthResult;
 import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
 import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
+import com.studentlife.studentlifejava.dto.response.AuthUserResponse;
 import com.studentlife.studentlifejava.dto.response.UserResponse;
 import com.studentlife.studentlifejava.entity.RefreshToken;
 import com.studentlife.studentlifejava.entity.Roles;
@@ -71,8 +72,8 @@ public class AuthServiceImpl implements AuthService {
 
         saveRefreshToken(savedUser, refreshToken);
 
-        UserResponse userResponse = userMapper.toUserResponse(savedUser);
-        return AuthResult.of(accessToken, refreshToken, userResponse);
+        AuthUserResponse authUserResponse = userMapper.toAuthUserResponse(savedUser);
+        return AuthResult.of(accessToken, refreshToken, authUserResponse);
     }
 
     @Override

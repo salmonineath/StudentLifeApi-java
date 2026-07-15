@@ -35,7 +35,10 @@ public class AuthController {
         cookieUtil.setAccessTokenCookie(response, result.accessToken());
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
         return ResponseEntity.status(201).body(new ApiResponse<>(
-                201, true, "Registered successfully.",
+
+                201,
+                true,
+                "Registered successfully.",
                 new RegisterResponse(result.user())
         ));
     }
@@ -49,7 +52,10 @@ public class AuthController {
         cookieUtil.setAccessTokenCookie(response, result.accessToken());
         cookieUtil.setRefreshTokenCookie(response, result.refreshToken());
         return ResponseEntity.ok(new ApiResponse<>(
-                200, true, "Login successfully."
+
+                200,
+                true,
+                "Login successfully."
         ));
     }
 

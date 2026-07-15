@@ -11,5 +11,5 @@ public class RegisterResponse {
 
 //    private String accessToken;
 
-    private UserResponse user;
+    private AuthUserResponse user;
 }
