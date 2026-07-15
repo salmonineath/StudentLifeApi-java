@@ -1,6 +1,10 @@
 spring:
   application:
     name: studentlifejava
+
+    jackson:
+      deserialization:
+        fail-on-unknown-properties: true
   datasource:
     url: ${DATASOURCE_URL}
     username: ${DATASOURCE_USERNAME}

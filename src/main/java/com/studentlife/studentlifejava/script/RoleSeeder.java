@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
+@Order(2)
 public class RoleSeeder implements CommandLineRunner{
     
     private final RoleRepository roleRepository;

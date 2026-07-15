@@ -1,11 +1,13 @@
 package com.studentlife.studentlifejava.exception;
 
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -73,6 +75,31 @@ public class GlobalException {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse<>(400, false, message, null));
+    }
+
+    // =========================================
+    // DEV + PROD: Invalid JSON or unknown fields
+    // =========================================
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<String>> handleInvalidRequestBody(
+            HttpMessageNotReadableException ex
+    ) {
+        Throwable cause = ex.getMostSpecificCause();
+
+        String message = "Invalid request body";
+
+        if (cause instanceof UnrecognizedPropertyException unknowField) {
+            message = "Unknow field is not allowed";
+        }
+
+        return ResponseEntity
+                .status((HttpStatus.BAD_REQUEST))
+                .body(new ApiResponse<>(
+                        400,
+                        false,
+                        message,
+                        null
+                ));
     }
 
     // =========================================
