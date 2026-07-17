@@ -31,58 +31,101 @@ public class AssignmentController {
     @PostMapping
     @Operation(summary = "Create a new assignment")
     public ResponseEntity<ApiResponse<AssignmentResponse>> create(
-            @Valid @RequestBody AssignmentRequest request) {
+            @Valid @RequestBody AssignmentRequest request
+            ) {
         AssignmentResponse response = assignmentService.create(request, currentUser());
-        return ResponseEntity.status(201).body(new ApiResponse<>(201, true, "Assignment created.", response));
+        return ResponseEntity.status(201).body(
+                new ApiResponse<>(
+                        201,
+                        true,
+                        "Assignment created.",
+                        response
+                )
+        );
     }
 
     @GetMapping
     @Operation(summary = "List all assignments for the authenticated user (paginated)")
     public ResponseEntity<ApiResponse<Page<AssignmentResponse>>> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size
+    ) {
         Page<AssignmentResponse> result = assignmentService.list(
-                currentUser(), PageRequest.of(page, size, Sort.by("createdAt").descending()));
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignments fetched.", result));
+                currentUser(),
+                PageRequest.of(page, size,
+                        Sort.by("createdAt").descending()
+                )
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Assignment fetched.",
+                        result
+                )
+        );
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a single assignment with all its tasks")
     public ResponseEntity<ApiResponse<AssignmentDetailResponse>> get(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment fetched.",
-                assignmentService.get(id, currentUser())));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Assignment detail fetched",
+                        assignmentService.get(id, currentUser())
+                )
+        );
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an assignment")
     public ResponseEntity<ApiResponse<AssignmentResponse>> update(
             @PathVariable Long id,
-            @Valid @RequestBody AssignmentRequest request) {
+            @Valid @RequestBody AssignmentRequest request
+    ) {
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         200,
                         true,
-                        "Assignment updated.",
-                assignmentService.update(id, request, currentUser())));
+                        "Assignment updated",
+                        assignmentService.update(id, request, currentUser())
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete an assignment (owner or admin only)")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id
+    ) {
         assignmentService.delete(id, currentUser());
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment deleted."));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Assignment deleted."
+                )
+        );
     }
 
     @PatchMapping("/{id}/complete")
     @Operation(summary = "Toggle the completed flag (independent of task progress)")
-    public ResponseEntity<ApiResponse<AssignmentResponse>> toggleComplete(@PathVariable Long id) {
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment completion toggled.",
-                assignmentService.toggleComplete(id, currentUser())));
+    public ResponseEntity<ApiResponse<AssignmentResponse>> toggleComplete(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Assignment completion toggled.",
+                        assignmentService.toggleComplete(id, currentUser())
+                )
+        );
     }
 
-    // Delegates to AuthUtil instead of casting the raw principal: the inline
-    // (Users) cast blows up with a 500 on a null or anonymous authentication,
-    // where AuthUtil throws a proper 401.
     private Users currentUser() {
         return authUtil.getAuthenticatedUser();
     }
