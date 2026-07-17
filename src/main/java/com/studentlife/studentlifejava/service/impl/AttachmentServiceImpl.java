@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.List;
 
 import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.notFound;
 
@@ -65,8 +66,12 @@ public class AttachmentServiceImpl implements AttachmentService {
                 .orElseThrow(() -> notFound("Attachment not found."));
         accessGuard.requireMember(attachment.getTask().getAssignment(), currentUser);
 
-        cloudinaryService.delete(attachment.getPublicId(), attachment.getResourceType());
+        // DB row first, remote file after commit: if the row delete fails and the
+        // transaction rolls back, nothing has touched Cloudinary yet. The old
+        // inline order destroyed the file up front and left a row pointing at a
+        // dead URL whenever the DB delete failed.
         attachmentRepository.delete(attachment);
+        cloudinaryService.deleteAllAfterCommit(List.of(attachment));
     }
 
     private Task findTask(Long taskId) {

@@ -1,5 +1,6 @@
 package com.studentlife.studentlifejava.jwt;
 
+import com.studentlife.studentlifejava.entity.Users;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Claims;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -16,6 +19,8 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
+
+import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.unauthorized;
 
 @Service
 @RequiredArgsConstructor
@@ -133,6 +138,18 @@ public class JWTService {
             throw new io.jsonwebtoken.JwtException("Token is not an access token");
         }
         return claims.getSubject();
+    }
+
+    public Users getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                authentication.getPrincipal().equals("anonymousUser")) {
+            throw unauthorized("User not authenticated");
+        }
+
+        return (Users) authentication.getPrincipal();
     }
 
 }

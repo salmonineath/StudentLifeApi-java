@@ -6,6 +6,7 @@ import com.studentlife.studentlifejava.dto.response.AssignmentDetailResponse;
 import com.studentlife.studentlifejava.dto.response.AssignmentResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.AssignmentService;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
+    private final AuthUtil authUtil;
 
     @PostMapping
     @Operation(summary = "Create a new assignment")
@@ -57,7 +58,11 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse<AssignmentResponse>> update(
             @PathVariable Long id,
             @Valid @RequestBody AssignmentRequest request) {
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Assignment updated.",
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Assignment updated.",
                 assignmentService.update(id, request, currentUser())));
     }
 
@@ -75,7 +80,10 @@ public class AssignmentController {
                 assignmentService.toggleComplete(id, currentUser())));
     }
 
+    // Delegates to AuthUtil instead of casting the raw principal: the inline
+    // (Users) cast blows up with a 500 on a null or anonymous authentication,
+    // where AuthUtil throws a proper 401.
     private Users currentUser() {
-        return (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return authUtil.getAuthenticatedUser();
     }
 }

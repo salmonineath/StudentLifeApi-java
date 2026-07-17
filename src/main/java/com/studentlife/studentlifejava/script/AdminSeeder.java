@@ -17,7 +17,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(2)
+@Order(3)
 public class AdminSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;

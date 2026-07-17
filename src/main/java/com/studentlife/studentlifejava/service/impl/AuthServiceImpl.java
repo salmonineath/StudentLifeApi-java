@@ -4,7 +4,7 @@ import com.studentlife.studentlifejava.dto.AuthResult;
 import com.studentlife.studentlifejava.dto.request.AuthRequest;
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
 import com.studentlife.studentlifejava.dto.request.ResetPasswordRequest;
-import com.studentlife.studentlifejava.dto.response.UserResponse;
+import com.studentlife.studentlifejava.dto.response.AuthUserResponse;
 import com.studentlife.studentlifejava.entity.RefreshToken;
 import com.studentlife.studentlifejava.entity.Roles;
 import com.studentlife.studentlifejava.entity.Users;
@@ -19,6 +19,11 @@ import com.studentlife.studentlifejava.utils.TokenHashUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final JWTService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationService verificationService;
+    private final AuthenticationManager authenticationManager;
 
     @Override
     @Transactional
@@ -71,22 +77,27 @@ public class AuthServiceImpl implements AuthService {
 
         saveRefreshToken(savedUser, refreshToken);
 
-        UserResponse userResponse = userMapper.toUserResponse(savedUser);
-        return AuthResult.of(accessToken, refreshToken, userResponse);
+        AuthUserResponse authUserResponse = userMapper.toAuthUserResponse(savedUser);
+        return AuthResult.of(accessToken, refreshToken, authUserResponse);
     }
 
     @Override
     @Transactional
     public AuthResult login(AuthRequest request) {
         String identifier = request.getEmail_or_username();
-        // Same status + message for "no such user" and "wrong password" - a
-        // distinct 404 here would let callers enumerate valid emails/usernames.
-        Users user = userRepository.findByEmailOrUsername(identifier, identifier)
-                .orElseThrow(() -> unauthorized("Invalid credentials."));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw unauthorized("Invalid credentials.");
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(identifier, request.getPassword())
+            );
+        } catch (DisabledException e) {
+            throw forbidden("Your account has been suspended. Check your email for details");
+        } catch (AuthenticationException e) {
+            throw unauthorized("Invalid credentials");
         }
+
+        Users user = (Users) authentication.getPrincipal();
 
         List<String> roles = user.getRoles().stream().map(Roles::getName).toList();
 
@@ -171,7 +182,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        String email = verificationService.consumeResetToken(request.getResetToken());
+        // Peek first, consume last: Redis is not part of this JPA transaction,
+        // so destroying the token before the password write means any DB failure
+        // below leaves the user with a burned token and an unchanged password.
+        // Consuming after the writes risks only a token that lingers until its
+        // TTL if the delete itself fails - a far cheaper failure.
+        String email = verificationService.peekResetToken(request.getResetToken());
 
         if (email == null) {
             throw unauthorized("Invalid or expired reset token");
@@ -187,6 +203,8 @@ public class AuthServiceImpl implements AuthService {
         // A password reset should end every existing session - otherwise a stolen
         // refresh token survives the very action meant to lock the attacker out.
         refreshTokenRepository.revokeAllByUser(user);
+
+        verificationService.consumeResetToken(request.getResetToken());
     }
 
     private void saveRefreshToken(Users user, String rawRefreshToken) {

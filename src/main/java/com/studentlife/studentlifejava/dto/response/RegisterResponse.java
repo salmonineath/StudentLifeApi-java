@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RegisterResponse {
 
-    private String accessToken;
+//    private String accessToken;
 
-    private UserResponse user;
+    private AuthUserResponse user;
 }

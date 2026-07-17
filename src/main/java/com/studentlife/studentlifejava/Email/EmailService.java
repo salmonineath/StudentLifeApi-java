@@ -41,4 +41,18 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendAccountBannedEmail(String to, String reason) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(to);
+        message.setSubject("Your StudentLife account has been suspended");
+        message.setText(
+                "Your account has been suspended.\n\n"
+                + "Reason: " + reason + "\n\n"
+                + "If you believe this is a mistake, please contact support."
+        );
+
+        mailSender.send(message);
+    }
 }

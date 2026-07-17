@@ -14,4 +14,6 @@ public interface AssignmentInviteService {
     void revoke(Long assignmentId, String email, Users currentUser);
 
     List<MemberResponse> members(Long assignmentId, Users currentUser);
+
+    void acceptInvite(String token, Users currentUser);
 }

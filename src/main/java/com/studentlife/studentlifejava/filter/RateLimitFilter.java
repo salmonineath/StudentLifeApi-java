@@ -12,6 +12,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import java.util.Set;
 
 @Order(1)
 @Component
+@RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Set<String> RATE_LIMITED_PATHS = Set.of(
@@ -59,7 +61,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .build();
     }
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(@Nonnull HttpServletRequest request,
@@ -82,7 +84,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         } else {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            ApiResponse<Void> body = new ApiResponse<>(429, false, "Too many requests. Please slow down.");
+            ApiResponse<Void> body = new ApiResponse<>(
+                    429,
+                    false,
+                    "Too many requests."
+            );
             response.getWriter().write(objectMapper.writeValueAsString(body));
         }
     }

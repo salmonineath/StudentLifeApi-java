@@ -4,12 +4,12 @@ import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.AttachmentResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.AttachmentService;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
+    private final AuthUtil authUtil;
 
     @PostMapping(value = "/tasks/{taskId}/attachments", consumes = "multipart/form-data")
     @Operation(summary = "Upload a file attachment to a task")
@@ -38,7 +39,10 @@ public class AttachmentController {
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Attachment deleted."));
     }
 
+    // Delegates to AuthUtil instead of casting the raw principal: the inline
+    // (Users) cast blows up with a 500 on a null or anonymous authentication,
+    // where AuthUtil throws a proper 401.
     private Users currentUser() {
-        return (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return authUtil.getAuthenticatedUser();
     }
 }

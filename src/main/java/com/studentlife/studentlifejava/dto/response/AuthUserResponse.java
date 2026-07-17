@@ -1,14 +1,16 @@
 package com.studentlife.studentlifejava.dto.response;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.Set;
 
 @Data
-@Builder
-public class UserResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class AuthUserResponse {
 
     private Long id;
     private String fullname;
@@ -17,4 +19,5 @@ public class UserResponse {
     private String university;
     private String major;
     private String academicYear;
+    private Set<String> roles;
 }

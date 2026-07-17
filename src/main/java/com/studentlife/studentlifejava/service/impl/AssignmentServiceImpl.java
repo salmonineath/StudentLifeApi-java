@@ -21,6 +21,7 @@ import com.studentlife.studentlifejava.repository.ChecklistItemRepository;
 import com.studentlife.studentlifejava.repository.TaskRepository;
 import com.studentlife.studentlifejava.security.AssignmentAccessGuard;
 import com.studentlife.studentlifejava.service.AssignmentService;
+import com.studentlife.studentlifejava.service.CloudinaryService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final AttachmentRepository attachmentRepository;
     private final AssignmentInviteRepository assignmentInviteRepository;
     private final AssignmentAccessGuard accessGuard;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
@@ -89,7 +91,17 @@ public class AssignmentServiceImpl implements AssignmentService {
     public void delete(Long id, Users currentUser) {
         Assignment assignment = find(id);
         accessGuard.requireOwnerOrAdmin(assignment, currentUser);
+
+        // The DB cascade removes every task and attachment row with the
+        // assignment, so the attachments' Cloudinary files must be collected
+        // before the delete - afterwards no record exists to find them by, and
+        // they'd be orphaned (and billed) forever.
+        List<Task> tasks = taskRepository.findByAssignmentOrderBySortOrderAsc(assignment);
+        List<Attachment> attachments = tasks.isEmpty()
+                ? List.of()
+                : attachmentRepository.findByTaskIn(tasks);
         assignmentRepository.delete(assignment);
+        cloudinaryService.deleteAllAfterCommit(attachments);
     }
 
     @Override

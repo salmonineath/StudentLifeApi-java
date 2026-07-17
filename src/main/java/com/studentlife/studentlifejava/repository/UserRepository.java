@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,8 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     Optional<Users> findByUsername(String username);
 
     Optional<Users> findByEmailOrUsername(String email, String username);
+
+    List<Users> findByEmailInIgnoreCase(Collection<String> emails, Pageable pageable);
 
     @Query("SELECT u FROM Users u WHERE LOWER(u.email) LIKE LOWER(CONCAT(:prefix, '%'))")
     List<Users> findByEmailStartingWithIgnoreCase(@Param("prefix") String prefix, Pageable pageable);
