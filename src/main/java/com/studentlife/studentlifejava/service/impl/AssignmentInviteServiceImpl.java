@@ -15,6 +15,8 @@ import com.studentlife.studentlifejava.security.AssignmentAccessGuard;
 import com.studentlife.studentlifejava.service.AssignmentInviteService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.*
 // admin. Needs a real "accept invite by token" flow (and ideally linking
 // invitedUser for invites sent to an email that signs up later) before this
 // feature is usable end-to-end.
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssignmentInviteServiceImpl implements AssignmentInviteService {
@@ -76,7 +79,14 @@ public class AssignmentInviteServiceImpl implements AssignmentInviteService {
         // open for the round trip. Acceptable at current volume; move this after
         // commit (async/event listener) if invite email becomes unreliable or
         // this method starts showing up in slow-request logs.
-        emailService.sendAssignmentInviteEmail(email, currentUser.getFullname(), assignment.getTitle());
+        try {
+            emailService.sendAssignmentInviteEmail(email, currentUser.getFullname(), assignment.getTitle());
+        } catch (MailException e) {
+            // Rolls back the invite row (see comment above) but tells the caller
+            // what actually went wrong instead of a generic 500.
+            log.error("Invite email to {} failed; invite rolled back", email, e);
+            throw internal("Failed to send invite email. Please try again later.");
+        }
 
         return toResponse(saved);
     }

@@ -6,8 +6,10 @@ import com.studentlife.studentlifejava.repository.UserRepository;
 import com.studentlife.studentlifejava.service.VerificationService;
 import com.studentlife.studentlifejava.utils.OtpGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -15,6 +17,9 @@ import java.security.MessageDigest;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static com.studentlife.studentlifejava.exception.ErrorsExceptionFactory.internal;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VerificationServiceImpl implements VerificationService {
@@ -43,11 +48,25 @@ public class VerificationServiceImpl implements VerificationService {
 
         stringRedisTemplate.opsForValue().set(key, otp, otpValidityMinutes, TimeUnit.MINUTES);
 
-        emailService.sendOtpEmail(email, otp, otpValidityMinutes);
+        try {
+            emailService.sendOtpEmail(email, otp, otpValidityMinutes);
+        } catch (MailException e) {
+            // The user never received this OTP - leaving it live in Redis would
+            // let it be consumed later without them ever having seen it.
+            stringRedisTemplate.delete(key);
+            log.error("Failed to send OTP email to {}", email, e);
+            throw internal("Failed to send verification email. Please try again later.");
+        }
     }
 
     @Override
     public boolean validateAndDestroyOtp(String email, String clientOtp) {
+        // Guard against callers that bypass request validation - getBytes()
+        // below would otherwise throw an NPE.
+        if (clientOtp == null || clientOtp.isBlank()) {
+            return false;
+        }
+
         String key = REDIS_PREFIX + email;
 
         // Only fetch here - deleting on every attempt would let a single mistyped
@@ -84,6 +103,16 @@ public class VerificationServiceImpl implements VerificationService {
         );
 
         return token;
+    }
+
+    // Read-only lookup so callers can validate the token without burning it.
+    // Redis is outside the JPA transaction: consuming up front means a failed
+    // DB write afterwards permanently destroys a still-unused token.
+    @Override
+    public String peekResetToken(String token) {
+
+        return stringRedisTemplate.opsForValue()
+                .get(PASSWORD_RESET_PREFIX + token);
     }
 
     @Override

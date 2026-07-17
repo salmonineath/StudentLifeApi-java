@@ -5,6 +5,7 @@ spring:
     jackson:
       deserialization:
         fail-on-unknown-properties: true
+
   datasource:
     url: ${DATASOURCE_URL}
     username: ${DATASOURCE_USERNAME}
@@ -18,7 +19,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate        # Hibernate checks schema matches entities, never touches DDL
+#      ddl-auto: validate
+      ddl-auto: update  # Hibernate checks schema matches entities, never touches DDL
       show-sql: false
 
   servlet:
@@ -27,8 +29,8 @@ spring:
       max-request-size: 10MB
 
   flyway:
-    enabled: true
-    locations: classpath:db/migration
+    enabled: ${FLYWAY_ENABLE}
+    locations: ${FLYWAY_LOCATIONS}
 
   jwt:
     secret: ${JWT_SECRET}
@@ -43,8 +45,8 @@ spring:
       timeout: 2000ms # Connection timeout configuration
 
   mail:
-    host: smtp.gmail.com
-    port: 587
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:

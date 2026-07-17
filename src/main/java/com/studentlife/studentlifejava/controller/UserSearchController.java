@@ -2,7 +2,9 @@ package com.studentlife.studentlifejava.controller;
 
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.MemberResponse;
-import com.studentlife.studentlifejava.service.UserSearchService;
+import com.studentlife.studentlifejava.entity.Users;
+import com.studentlife.studentlifejava.service.impl.UserSearchServiceImpl;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +27,8 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class UserSearchController {
 
-    private final UserSearchService userSearchService;
+    private final UserSearchServiceImpl userSearchService;
+    private final AuthUtil authUtil;
 
     @GetMapping("/search")
     @Operation(summary = "Search users by email prefix, for invite autocomplete (max 10 results)")
@@ -34,7 +37,12 @@ public class UserSearchController {
             // instead of silently returning an arbitrary page of 10 users.
             @RequestParam @NotBlank String email
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(200, true, "Users fetched.",
-                userSearchService.searchByEmail(email)));
+        Users currentUser = authUtil.getAuthenticatedUser();
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        "Users fetched.",
+                userSearchService.searchByEmail(email, currentUser)));
     }
 }

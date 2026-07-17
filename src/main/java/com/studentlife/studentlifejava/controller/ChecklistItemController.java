@@ -6,13 +6,13 @@ import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.ChecklistItemResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.ChecklistItemService;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class ChecklistItemController {
 
     private final ChecklistItemService checklistItemService;
+    private final AuthUtil authUtil;
 
     @PostMapping("/tasks/{taskId}/checklist")
     @Operation(summary = "Add a checklist item to a task")
@@ -49,7 +50,10 @@ public class ChecklistItemController {
         return ResponseEntity.ok(new ApiResponse<>(200, true, "Checklist item deleted."));
     }
 
+    // Delegates to AuthUtil instead of casting the raw principal: the inline
+    // (Users) cast blows up with a 500 on a null or anonymous authentication,
+    // where AuthUtil throws a proper 401.
     private Users currentUser() {
-        return (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return authUtil.getAuthenticatedUser();
     }
 }

@@ -8,5 +8,7 @@ public interface VerificationService {
 
     String generateResetToken(String email);
 
+    String peekResetToken(String token);
+
     String consumeResetToken(String token);
 }

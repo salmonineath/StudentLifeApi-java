@@ -9,8 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import org.slf4j.Logger;
 
@@ -98,6 +101,55 @@ public class GlobalException {
                         400,
                         false,
                         message,
+                        null
+                ));
+    }
+
+    // =========================================
+    // DEV + PROD: Wrong type in path/query params
+    // e.g. GET /assignments/abc where an id is expected.
+    // Without this it falls into the 500 catch-all below,
+    // mislabelling a client mistake as a server error.
+    // =========================================
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<String>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(
+                        400,
+                        false,
+                        "Invalid value for parameter '" + ex.getName() + "'",
+                        null
+                ));
+    }
+
+    // =========================================
+    // DEV + PROD: Missing required query/form parameter
+    // e.g. multipart upload without the "file" part
+    // =========================================
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<String>> handleMissingParameter(MissingServletRequestParameterException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(
+                        400,
+                        false,
+                        "Missing required parameter '" + ex.getParameterName() + "'",
+                        null
+                ));
+    }
+
+    // =========================================
+    // DEV + PROD: Upload exceeds spring.servlet.multipart limits
+    // =========================================
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<String>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ApiResponse<>(
+                        413,
+                        false,
+                        "File is too large. Maximum allowed size is 10MB.",
                         null
                 ));
     }

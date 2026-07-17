@@ -7,13 +7,13 @@ import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.TaskResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import com.studentlife.studentlifejava.service.TaskService;
+import com.studentlife.studentlifejava.utils.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +26,7 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final AuthUtil authUtil;
 
     @PostMapping("/assignments/{assignmentId}/tasks")
     @Operation(summary = "Add a task to an assignment")
@@ -70,7 +71,10 @@ public class TaskController {
                 taskService.updateStatus(taskId, request, currentUser())));
     }
 
+    // Delegates to AuthUtil instead of casting the raw principal: the inline
+    // (Users) cast blows up with a 500 on a null or anonymous authentication,
+    // where AuthUtil throws a proper 401.
     private Users currentUser() {
-        return (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return authUtil.getAuthenticatedUser();
     }
 }

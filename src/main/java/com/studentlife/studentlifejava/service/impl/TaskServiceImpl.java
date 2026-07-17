@@ -18,6 +18,7 @@ import com.studentlife.studentlifejava.repository.TaskRepository;
 import com.studentlife.studentlifejava.repository.UserRepository;
 import com.studentlife.studentlifejava.security.AssignmentAccessGuard;
 import com.studentlife.studentlifejava.service.AssignmentService;
+import com.studentlife.studentlifejava.service.CloudinaryService;
 import com.studentlife.studentlifejava.service.TaskService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class TaskServiceImpl implements TaskService {
     private final AttachmentRepository attachmentRepository;
     private final AssignmentAccessGuard accessGuard;
     private final AssignmentService assignmentService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
@@ -83,8 +85,15 @@ public class TaskServiceImpl implements TaskService {
         Task task = findTask(taskId);
         accessGuard.requireMember(task.getAssignment(), currentUser);
         Long assignmentId = task.getAssignment().getId();
+
+        // The DB cascade silently removes the attachment rows with the task, so
+        // their Cloudinary files must be collected here - after the cascade there
+        // is no record left to find them by, and they'd be orphaned (and billed)
+        // forever.
+        List<Attachment> attachments = attachmentRepository.findByTask(task);
         taskRepository.delete(task);
         assignmentService.recalculateProgress(assignmentId);
+        cloudinaryService.deleteAllAfterCommit(attachments);
     }
 
     @Override

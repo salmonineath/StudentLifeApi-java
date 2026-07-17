@@ -2,6 +2,7 @@ package com.studentlife.studentlifejava.mapper;
 
 import com.studentlife.studentlifejava.dto.request.RegisterRequest;
 import com.studentlife.studentlifejava.dto.response.AuthUserResponse;
+import com.studentlife.studentlifejava.dto.response.CurrentUserResponse;
 import com.studentlife.studentlifejava.dto.response.UserResponse;
 import com.studentlife.studentlifejava.entity.Users;
 import org.mapstruct.Mapper;
@@ -16,6 +17,8 @@ public interface UserMapper {
     AuthUserResponse toAuthUserResponse(Users user);
 
     UserResponse toUserResponse(Users users);
+
+    CurrentUserResponse toCurrentUserResponse(Users users);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "university", ignore = true)
