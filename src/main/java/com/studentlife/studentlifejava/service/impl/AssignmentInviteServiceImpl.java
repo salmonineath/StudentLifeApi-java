@@ -16,7 +16,6 @@ import com.studentlife.studentlifejava.service.AssignmentInviteService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -74,19 +73,10 @@ public class AssignmentInviteServiceImpl implements AssignmentInviteService {
                 .build();
         AssignmentInvite saved = assignmentInviteRepository.save(invite);
 
-        // Sent inside the same transaction as the save: if the SMTP call throws or
-        // is slow, the invite row rolls back too and the DB connection is held
-        // open for the round trip. Acceptable at current volume; move this after
-        // commit (async/event listener) if invite email becomes unreliable or
-        // this method starts showing up in slow-request logs.
-        try {
-            emailService.sendAssignmentInviteEmail(email, currentUser.getFullname(), assignment.getTitle());
-        } catch (MailException e) {
-            // Rolls back the invite row (see comment above) but tells the caller
-            // what actually went wrong instead of a generic 500.
-            log.error("Invite email to {} failed; invite rolled back", email, e);
-            throw internal("Failed to send invite email. Please try again later.");
-        }
+        // Fire-and-forget, same as the ban-notification email: EmailService#sendAssignmentInviteEmail
+        // is @Async and swallows its own send failures (logs, never throws), so the invite row is
+        // never rolled back over a failed/slow SMTP call.
+        emailService.sendAssignmentInviteEmail(email, currentUser.getFullname(), assignment.getTitle());
 
         return toResponse(saved);
     }
