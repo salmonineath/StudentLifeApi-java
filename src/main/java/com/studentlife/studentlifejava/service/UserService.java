@@ -14,7 +14,7 @@ public interface UserService {
 
     CurrentUserResponse getUserById(Long id);
 
-    void banUser(Long id, UpdateUserByAdminRequest request);
+    void deactivateUser(Long id, UpdateUserByAdminRequest request);
 
-    void unBanUser(Long id);
+    void activateUser(Long id);
 }

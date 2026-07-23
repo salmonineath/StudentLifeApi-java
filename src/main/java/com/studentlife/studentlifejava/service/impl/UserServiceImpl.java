@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void banUser(Long id, UpdateUserByAdminRequest request) {
+    public void deactivateUser(Long id, UpdateUserByAdminRequest request) {
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> notFound("User not found"));
         user.setIsActive(false);
@@ -66,7 +66,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void unBanUser(Long id) {
+    public void activateUser(Long id) {
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> notFound("User not found"));
 

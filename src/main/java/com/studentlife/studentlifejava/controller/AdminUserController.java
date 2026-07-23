@@ -42,10 +42,12 @@ public class AdminUserController {
         );
     }
 
-    @PatchMapping("/{id}/ban")
-    public ResponseEntity<ApiResponse<Void>> banUser(@PathVariable Long id,
-                                                     @Valid @RequestBody UpdateUserByAdminRequest request) {
-        userService.banUser(id, request);
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<ApiResponse<Void>> deactivateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserByAdminRequest request
+    ) {
+        userService.deactivateUser(id, request);
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         200,
@@ -55,9 +57,9 @@ public class AdminUserController {
         );
     }
 
-    @PatchMapping("/{id}/unban")
-    public ResponseEntity<ApiResponse<Void>> unBanUser(@PathVariable Long id) {
-        userService.unBanUser(id);
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
+        userService.activateUser(id);
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         200,

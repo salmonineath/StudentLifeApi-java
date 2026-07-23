@@ -8,6 +8,7 @@ import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.RegisterResponse;
 import com.studentlife.studentlifejava.service.AuthService;
 import com.studentlife.studentlifejava.utils.CookieUtil;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Register, login, token refresh, and logout endpoints")
 public class AuthController {
 
     private final AuthService authService;
@@ -39,12 +41,13 @@ public class AuthController {
                 201,
                 true,
                 "Registered successfully.",
-                new RegisterResponse(result.user())
+                // TODO: Remove accessToken from the response on prod
+                new RegisterResponse(result.accessToken(), result.user())
         ));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(
+    public ResponseEntity<ApiResponse<String>> login(
             @Valid @RequestBody AuthRequest request,
             HttpServletResponse response
     ) {
@@ -55,12 +58,14 @@ public class AuthController {
 
                 200,
                 true,
-                "Login successfully."
-        ));
+                "Login successfully.",
+                // TODO: Remove accessToken from the response on prod
+                result.accessToken())
+        );
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Void>> refresh(
+    public ResponseEntity<ApiResponse<String>> refresh(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -71,7 +76,8 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 200,
                 true,
-                "Token refreshed successfully."
+                "Token refreshed successfully.",
+                result.accessToken()
         ));
     }
 

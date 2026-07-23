@@ -20,7 +20,7 @@ spring:
   jpa:
     hibernate:
 #      ddl-auto: validate
-      ddl-auto: update  # Hibernate checks schema matches entities, never touches DDL
+      ddl-auto: ${JPA_HIBERNATE_DDL_AUTO:validate}  # Hibernate checks schema matches entities, never touches DDL
       show-sql: false
 
   servlet:
@@ -29,8 +29,8 @@ spring:
       max-request-size: 10MB
 
   flyway:
-    enabled: ${FLYWAY_ENABLE}
-    locations: ${FLYWAY_LOCATIONS}
+    enabled: ${FLYWAY_ENABLE:true}
+#    locations: ${FLYWAY_LOCATIONS}
 
   jwt:
     secret: ${JWT_SECRET}
@@ -59,6 +59,21 @@ spring:
 server:
   port: 5000
   forward-headers-strategy: framework
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    # Tag order is controlled server-side (OpenApiConfig#tagOrderCustomizer) so
+    # Authentication can be pinned first - a client-side "alpha" sorter here
+    # would override that and re-alphabetize every load.
+    try-it-out-enabled: true
+    # Auth rides on httpOnly cookies - Try it out must send credentials
+    # or every protected endpoint would return 401 from Swagger UI.
+    with-credentials: true
+  default-produces-media-type: application/json
 
 app:
   cors:

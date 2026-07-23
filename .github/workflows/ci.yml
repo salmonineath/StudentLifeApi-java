@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: studentlife_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test -d studentlife_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATASOURCE_URL: jdbc:postgresql://localhost:5432/studentlife_test
+      DATASOURCE_USERNAME: test
+      DATASOURCE_PASSWORD: test
+      FLYWAY_ENABLE: "true"
+      JPA_HIBERNATE_DDL_AUTO: validate
+      # Test-only value, never used against anything real - long enough to
+      # satisfy HS512's minimum key-length requirement.
+      JWT_SECRET: "ci-test-only-secret-key-not-for-production-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      JWT_ACCESS_TOKEN_EXPIRE: "900000"
+      JWT_REFRESH_TOKEN_EXPIRE: "604800000"
+      ADMIN_USERNAME: admin
+      ADMIN_EMAIL: admin@test.local
+      ADMIN_PASSWORD: "TestAdmin123!"
+      MAIL_HOST: localhost
+      MAIL_PORT: "1025"
+      MAIL_USERNAME: test@test.local
+      MAIL_PASSWORD: test
+      CLOUD_NAME: test
+      API_KEY: test
+      API_SECRET: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and run tests
+        run: ./mvnw -B verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7

@@ -5,6 +5,7 @@ import com.studentlife.studentlifejava.dto.request.OtpVerificationRequest;
 import com.studentlife.studentlifejava.dto.response.ApiResponse;
 import com.studentlife.studentlifejava.dto.response.ResetTokenResponse;
 import com.studentlife.studentlifejava.service.VerificationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Password-reset OTP flow — part of the authentication lifecycle")
 public class OtpController {
 
     private final VerificationService verificationService;
